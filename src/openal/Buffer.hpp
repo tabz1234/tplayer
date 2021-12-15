@@ -9,7 +9,7 @@ extern "C"
 #include <chrono>
 #include <cstdint>
 
-#include "ffmpeg/FFmpegRaiiFrame.hpp"
+#include "ffmpeg/Frame.hpp"
 
 namespace openal {
 
@@ -22,7 +22,7 @@ class Buffer final
     TimeStampT time_stamp_;
 
   public:
-    Buffer(ffmpeg::RaiiFrame<AVMEDIA_TYPE_AUDIO> av_frame);
+    Buffer(FFmpeg::Frame<AVMEDIA_TYPE_AUDIO> av_frame);
 
     AlBufferT get_al_buffer() noexcept;
     AlBufferT* get_al_buffer_ptr() noexcept;

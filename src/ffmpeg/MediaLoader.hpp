@@ -1,5 +1,5 @@
-#ifndef FFMPEGVIDEOLOADER_HPP
-#define FFMPEGVIDEOLOADER_HPP
+#ifndef FFMPEG_MEDIA_LOADER_HPP
+#define FFMPEG_MEDIA_LOADER_HPP
 
 extern "C"
 {
@@ -12,9 +12,9 @@ extern "C"
 #include <list>
 #include <optional>
 
-#include "ffmpeg/FFmpegRaiiFrame.hpp"
+#include "ffmpeg/Frame.hpp"
 
-namespace ffmpeg {
+namespace FFmpeg {
 
 class MediaLoader final
 {
@@ -35,14 +35,14 @@ class MediaLoader final
     AVRational av_video_time_base_;
     std::optional<AVRational> av_audio_time_base_;
 
-    std::list<RaiiFrame<AVMEDIA_TYPE_VIDEO>> video_frame_buffer_;
-    std::list<RaiiFrame<AVMEDIA_TYPE_AUDIO>> audio_frame_buffer_;
+    std::list<Frame<AVMEDIA_TYPE_VIDEO>> video_frame_buffer_;
+    std::list<Frame<AVMEDIA_TYPE_AUDIO>> audio_frame_buffer_;
 
   public:
     MediaLoader(const std::filesystem::path& video_path);
 
-    std::list<RaiiFrame<AVMEDIA_TYPE_AUDIO>>& get_audio_buffer() noexcept;
-    std::list<RaiiFrame<AVMEDIA_TYPE_VIDEO>>& get_video_buffer() noexcept;
+    std::list<Frame<AVMEDIA_TYPE_AUDIO>>& get_audio_buffer() noexcept;
+    std::list<Frame<AVMEDIA_TYPE_VIDEO>>& get_video_buffer() noexcept;
 
     void clear_audio_buffer();
     void clear_video_buffer();

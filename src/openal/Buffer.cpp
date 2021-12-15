@@ -1,4 +1,4 @@
-#include "openal/OpenAlBuffer.hpp"
+#include "openal/Buffer.hpp"
 
 #include <utility>
 
@@ -8,8 +8,8 @@ using namespace openal;
 constexpr ALenum AL_FORMAT_MONO_FLOAT32 = 0x10010; //@TODO check AL extension support
 constexpr ALenum AL_FORMAT_STEREO_FLOAT32 = 0x10011;
 
-Buffer::Buffer(ffmpeg::RaiiFrame<AVMEDIA_TYPE_AUDIO> av_frame)
-  : time_stamp_{ av_frame.ptr()->pkt_dts }
+Buffer::Buffer(FFmpeg::Frame<AVMEDIA_TYPE_AUDIO> av_frame)
+  : time_stamp_{ av_frame.ptr()->pts }
 {
 
     ALenum al_format = AL_NONE;
@@ -40,7 +40,6 @@ Buffer::Buffer(ffmpeg::RaiiFrame<AVMEDIA_TYPE_AUDIO> av_frame)
     }
 #endif
 }
-
 Buffer::TimeStampT
 Buffer::get_time_stamp() const noexcept
 {
@@ -60,13 +59,11 @@ Buffer::operator=(Buffer&& rval) noexcept
 
     return *this;
 }
-
 Buffer::AlBufferT
 Buffer::get_al_buffer() noexcept
 {
     return al_buffer_;
 }
-
 Buffer::AlBufferT*
 Buffer::get_al_buffer_ptr() noexcept
 {

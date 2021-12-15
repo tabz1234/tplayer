@@ -7,11 +7,12 @@
 
 #include "terminal/TerminalEmulator.hpp"
 
-#include "openal/OpenAlDevice.hpp"
-#include "openal/OpenAlStreamingSource.hpp"
+#include "openal/Device.hpp"
+#include "openal/StreamingSource.hpp"
 
-#include "ffmpeg/FFmpegAudioFormatConverter.hpp"
-#include "ffmpeg/FFmpegVideoLoader.hpp"
+#include "ffmpeg/MediaLoader.hpp"
+#include "ffmpeg/convert_audio_buffer.hpp"
+#include "ffmpeg/shrink_audio_size_to_content.hpp"
 
 using namespace std::chrono_literals;
 using namespace std::string_literals;
@@ -32,7 +33,7 @@ main(int argc, char** argv)
         std::exit(EXIT_FAILURE);
     }
 
-    std::signal(SIGINT, [](int) { std::exit(EXIT_FAILURE); });
+    std::signal(SIGINT, [](int) { throw std::runtime_error("sigint"); });
 
 #if 0
     VideoLoaderDevice video_loader(std::filesystem::absolute(filepath));
@@ -45,7 +46,7 @@ main(int argc, char** argv)
     openal::Device::get_singleton();
     openal::StreamingSource sound_source;
 
-    ffmpeg::MediaLoader vloader(filepath);
+    FFmpeg::MediaLoader vloader(filepath);
 
     bool exit = false;
     while (!exit) {
@@ -55,10 +56,13 @@ main(int argc, char** argv)
                 exit = true;
             }
         }
-        convert_audio_buffer_format(
+#if 1
+        FFmpeg::convert_audio_buffer_format(
           vloader.get_audio_buffer().begin(), vloader.get_audio_buffer().end(), AV_SAMPLE_FMT_FLT);
+#endif
 
         for (auto& elem : vloader.get_audio_buffer()) {
+            FFmpeg::shrink_audio_size_to_content(elem.ptr());
             sound_source.add_buffer(openal::Buffer(std::move(elem)));
         }
         sound_source.play(vloader.get_audio_ratio());

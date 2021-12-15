@@ -1,4 +1,4 @@
-#include "openal/OpenAlStreamingSource.hpp"
+#include "openal/StreamingSource.hpp"
 
 extern "C"
 {

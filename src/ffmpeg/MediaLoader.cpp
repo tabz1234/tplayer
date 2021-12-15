@@ -1,10 +1,10 @@
-#include "FFmpegVideoLoader.hpp"
+#include "MediaLoader.hpp"
 
 #include <stdexcept>
 
 using namespace std::string_literals;
 
-ffmpeg::MediaLoader::MediaLoader(const std::filesystem::path& video_path)
+FFmpeg::MediaLoader::MediaLoader(const std::filesystem::path& video_path)
   : video_path_{ video_path }
 {
     int c_api_ret;
@@ -103,28 +103,28 @@ ffmpeg::MediaLoader::MediaLoader(const std::filesystem::path& video_path)
     }
 }
 
-std::list<ffmpeg::RaiiFrame<AVMEDIA_TYPE_AUDIO>>&
-ffmpeg::MediaLoader::get_audio_buffer() noexcept
+std::list<FFmpeg::Frame<AVMEDIA_TYPE_AUDIO>>&
+FFmpeg::MediaLoader::get_audio_buffer() noexcept
 {
     return audio_frame_buffer_;
 }
-std::list<ffmpeg::RaiiFrame<AVMEDIA_TYPE_VIDEO>>&
-ffmpeg::MediaLoader::get_video_buffer() noexcept
+std::list<FFmpeg::Frame<AVMEDIA_TYPE_VIDEO>>&
+FFmpeg::MediaLoader::get_video_buffer() noexcept
 {
     return video_frame_buffer_;
 }
 void
-ffmpeg::MediaLoader::clear_audio_buffer()
+FFmpeg::MediaLoader::clear_audio_buffer()
 {
     audio_frame_buffer_.clear();
 }
 void
-ffmpeg::MediaLoader::clear_video_buffer()
+FFmpeg::MediaLoader::clear_video_buffer()
 {
     video_frame_buffer_.clear();
 }
 AVRational
-ffmpeg::MediaLoader::get_audio_ratio()
+FFmpeg::MediaLoader::get_audio_ratio()
 {
     if (!av_audio_time_base_.has_value()) [[unlikely]] {
         throw std::runtime_error("av_audio_time_base_ has no value");
@@ -133,7 +133,7 @@ ffmpeg::MediaLoader::get_audio_ratio()
     return av_audio_time_base_.value();
 }
 bool
-ffmpeg::MediaLoader::decode_next_packet()
+FFmpeg::MediaLoader::decode_next_packet()
 {
 #define DRT 1
 #if DRT
@@ -151,7 +151,7 @@ ffmpeg::MediaLoader::decode_next_packet()
                 if (c_api_ret != AVERROR(EAGAIN)) {
                     throw std::runtime_error("avcodec_send_packet failed");
                 } else {
-                    RaiiFrame<AVMEDIA_TYPE_VIDEO> bloat_frame;
+                    Frame<AVMEDIA_TYPE_VIDEO> bloat_frame;
 
                     while (avcodec_receive_frame(av_video_codec_ctx_, bloat_frame.ptr()) != AVERROR_EOF) {
                     }
@@ -163,7 +163,7 @@ ffmpeg::MediaLoader::decode_next_packet()
 
             do {
 
-                RaiiFrame<AVMEDIA_TYPE_VIDEO> video_frame;
+                Frame<AVMEDIA_TYPE_VIDEO> video_frame;
                 c_api_ret = avcodec_receive_frame(av_video_codec_ctx_, video_frame.ptr());
                 if (c_api_ret != 0)
                     break;
@@ -190,7 +190,7 @@ ffmpeg::MediaLoader::decode_next_packet()
                 if (c_api_ret != AVERROR(EAGAIN)) [[unlikely]] {
                     throw std::runtime_error("avcodec_send_packet failed");
                 } else {
-                    RaiiFrame<AVMEDIA_TYPE_AUDIO> bloat_frame;
+                    Frame<AVMEDIA_TYPE_AUDIO> bloat_frame;
                     while (avcodec_receive_frame(av_audio_codec_ctx_, bloat_frame.ptr()) != AVERROR_EOF) {
                     }
 
@@ -201,7 +201,7 @@ ffmpeg::MediaLoader::decode_next_packet()
 
             do {
 
-                RaiiFrame<AVMEDIA_TYPE_AUDIO> audio_frame;
+                Frame<AVMEDIA_TYPE_AUDIO> audio_frame;
 
                 c_api_ret = avcodec_receive_frame(av_audio_codec_ctx_, audio_frame.ptr());
                 if (c_api_ret != 0)
@@ -227,7 +227,7 @@ ffmpeg::MediaLoader::decode_next_packet()
     return false;
 }
 
-ffmpeg::MediaLoader::~MediaLoader()
+FFmpeg::MediaLoader::~MediaLoader()
 {
 
     avformat_close_input(&av_format_ctx_);

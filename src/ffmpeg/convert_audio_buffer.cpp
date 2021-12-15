@@ -1,4 +1,4 @@
-#include "FFmpegAudioFormatConverter.hpp"
+#include "convert_audio_buffer.hpp"
 
 extern "C"
 {
@@ -6,11 +6,10 @@ extern "C"
 }
 
 #include <stdexcept>
-#include <stdlib.h>
 
 void
-ffmpeg::convert_audio_buffer_format(std::list<RaiiFrame<AVMEDIA_TYPE_AUDIO>>::iterator beg,
-                                    std::list<RaiiFrame<AVMEDIA_TYPE_AUDIO>>::iterator end,
+FFmpeg::convert_audio_buffer_format(std::list<Frame<AVMEDIA_TYPE_AUDIO>>::iterator beg,
+                                    std::list<Frame<AVMEDIA_TYPE_AUDIO>>::iterator end,
                                     const AVSampleFormat new_format)
 {
 
@@ -37,23 +36,16 @@ ffmpeg::convert_audio_buffer_format(std::list<RaiiFrame<AVMEDIA_TYPE_AUDIO>>::it
     }
 
     for (auto& it = beg; it != end; ++it) {
-        RaiiFrame<AVMEDIA_TYPE_AUDIO> resampled_frame;
+        Frame<AVMEDIA_TYPE_AUDIO> resampled_frame;
 
         resampled_frame.ptr()->sample_rate = it->ptr()->sample_rate;
         resampled_frame.ptr()->channel_layout = it->ptr()->channel_layout;
         resampled_frame.ptr()->format = new_format;
+        resampled_frame.ptr()->nb_samples = it->ptr()->nb_samples;
 
         av_frame_copy_props(resampled_frame.ptr(), it->ptr());
 
         c_api_ret = swr_convert_frame(swr_ctx_, resampled_frame.ptr(), it->ptr());
-
-        int i;
-        for (i = resampled_frame.ptr()->linesize[0] - 1; i >= 0; --i) {
-            if (resampled_frame.ptr()->data[0][i] != (uint8_t)0)
-                break;
-        }
-        resampled_frame.ptr()->linesize[0] = i + 1;
-        /*note : ffmpeg leave data with some empty cells (for alignment) filled with 0*/
 
         if (c_api_ret != 0) [[unlikely]] {
             throw std::runtime_error("swr_convert_frame failed");

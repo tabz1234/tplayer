@@ -1,4 +1,4 @@
-#include "OpenAlDevice.hpp"
+#include "Device.hpp"
 
 extern "C"
 {

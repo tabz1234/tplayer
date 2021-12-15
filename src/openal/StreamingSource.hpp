@@ -8,8 +8,8 @@ extern "C"
 
 #include <list>
 
-#include "ffmpeg/FFmpegRaiiFrame.hpp"
-#include "openal/OpenAlBuffer.hpp"
+#include "ffmpeg/Frame.hpp"
+#include "openal/Buffer.hpp"
 
 namespace openal {
 

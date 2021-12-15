@@ -22,22 +22,13 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
-set(sources
-	./src/main.cpp
+file(GLOB FFMPEG_SRC "src/ffmpeg/*.c*")
+file(GLOB OPENAL_SRC "src/openal/*.c*")
+file(GLOB BASE_SRC "src/*.c*")
 
-	./src/ffmpeg/FFmpegVideoLoader.cpp
-	./src/ffmpeg/FFmpegAudioFormatConverter.cpp
+add_executable(${PROJECT_NAME} ${FFMPEG_SRC} ${OPENAL_SRC} ${BASE_SRC})
 
-	./src/openal/OpenAlDevice.cpp
-	./src/openal/OpenAlStreamingSource.cpp
-	./src/openal/OpenAlBuffer.cpp
-
-	./src/terminal/TerminalEmulator.cpp
-	
-)
-add_executable(${PROJECT_NAME} ${sources})
-
-if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+if(CMAKE_BUILD_TYPE STREQUAL "debug")
 enable_testing()
   target_compile_options(${PROJECT_NAME}
                          PUBLIC ${DEFAULT_ADDITIONAL_DEBUG_OPTIONS})
@@ -50,7 +41,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${Link_libs})
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src /usr/include)
 
 
-if(CMAKE_BUILD_TYPE STREQUAL "Release")
+if(CMAKE_BUILD_TYPE STREQUAL "release")
 add_custom_command(TARGET ${PROJECT_NAME}
         POST_BUILD
 	COMMAND cp ${CMAKE_BINARY_DIR}/${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
