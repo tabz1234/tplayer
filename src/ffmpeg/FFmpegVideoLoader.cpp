@@ -149,8 +149,7 @@ ffmpeg::MediaLoader::decode_next_packet()
             if (c_api_ret != 0) [[unlikely]] {
 
                 if (c_api_ret != AVERROR(EAGAIN)) {
-                    throw std::runtime_error("Failed to send video packet, averr :"s +
-                                             av_err2str(c_api_ret));
+                    throw std::runtime_error("avcodec_send_packet failed");
                 } else {
                     RaiiFrame<AVMEDIA_TYPE_VIDEO> bloat_frame;
 
@@ -189,8 +188,7 @@ ffmpeg::MediaLoader::decode_next_packet()
             if (c_api_ret != 0) [[unlikely]] {
 
                 if (c_api_ret != AVERROR(EAGAIN)) [[unlikely]] {
-                    throw std::runtime_error("Failed to send audio packet, averr :"s +
-                                             av_err2str(c_api_ret));
+                    throw std::runtime_error("avcodec_send_packet failed");
                 } else {
                     RaiiFrame<AVMEDIA_TYPE_AUDIO> bloat_frame;
                     while (avcodec_receive_frame(av_audio_codec_ctx_, bloat_frame.ptr()) != AVERROR_EOF) {
