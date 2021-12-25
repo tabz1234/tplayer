@@ -1,5 +1,4 @@
-#ifndef RGB_HPP
-#define RGB_HPP
+#pragma once
 
 #include <cstdint>
 
@@ -12,4 +11,3 @@ struct RGB
     ColorT b;
 };
 
-#endif

@@ -1,33 +1,25 @@
-#ifndef OPENAL_BUFFER_HPP
-#define OPENAL_BUFFER_HPP
+#pragma once
 
 extern "C"
 {
 #include <AL/al.h>
 }
 
-#include <chrono>
 #include <cstdint>
 
 #include "ffmpeg/Frame.hpp"
 
-namespace openal {
+namespace OpenAl {
 
-class Buffer final
+struct Buffer final
 {
-    using AlBufferT = ALuint;
-    using TimeStampT = int64_t;
 
-    AlBufferT al_buffer_;
-    TimeStampT time_stamp_;
+    Buffer(FFmpeg::Frame<FFmpeg::MediaType::audio>&& audio_frame);
 
-  public:
-    Buffer(FFmpeg::Frame<AVMEDIA_TYPE_AUDIO> av_frame);
+    ALuint get_al_buffer() noexcept;
+    ALuint* get_al_buffer_ptr() noexcept;
 
-    AlBufferT get_al_buffer() noexcept;
-    AlBufferT* get_al_buffer_ptr() noexcept;
-
-    TimeStampT get_time_stamp() const noexcept;
+    int64_t get_time_stamp() const noexcept;
 
     Buffer(Buffer&&) noexcept;
     Buffer& operator=(Buffer&&) noexcept;
@@ -35,10 +27,13 @@ class Buffer final
     ~Buffer();
 
   private:
+    ALuint al_buffer_;
+    int64_t time_stamp_;
+
+  public:
     Buffer(const Buffer&) = delete;
     Buffer& operator=(const Buffer&) = delete;
 };
 
-}
+} // namespace OpenAl
 
-#endif

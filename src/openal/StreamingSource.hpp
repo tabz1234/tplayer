@@ -1,5 +1,4 @@
-#ifndef OPENAL_STREAMING_SOURCE_HPP
-#define OPENAL_STREAMING_SOURCE_HPP
+#pragma once
 
 extern "C"
 {
@@ -11,29 +10,37 @@ extern "C"
 #include "ffmpeg/Frame.hpp"
 #include "openal/Buffer.hpp"
 
-namespace openal {
+namespace OpenAl {
 
-class StreamingSource
+struct StreamingSource final
 {
-    ALuint al_source_;
 
-    static constexpr float p_Pitch = 1.f;
-    static constexpr float p_Gain = 1.f;
-    static constexpr float p_Position[3] = { 0, 0, 0 };
-    static constexpr float p_Velocity[3] = { 0, 0, 0 };
-
-    std::list<openal::Buffer> buffer_list_;
-
-  public:
     StreamingSource();
 
-    void add_buffer(openal::Buffer&&);
+    void add_buffer(OpenAl::Buffer&&);
 
     void play(const AVRational audio_ratio);
 
     ~StreamingSource();
+
+  private:
+    ALuint al_source_;
+
+    std::list<OpenAl::Buffer> buffer_list_;
+
+  private:
+    static constexpr float pitch_ = 1.f;
+    static constexpr float gain_ = 1.f;
+    static constexpr float position_[3] = { 0, 0, 0 };
+    static constexpr float velocity_[3] = { 0, 0, 0 };
+
+  public:
+    StreamingSource(const StreamingSource&) = delete;
+    StreamingSource& operator=(const StreamingSource&) = delete;
+
+    StreamingSource(StreamingSource&&) = delete;
+    StreamingSource& operator=(StreamingSource&&) = delete;
 };
 
-} // namespace openal
+}
 
-#endif

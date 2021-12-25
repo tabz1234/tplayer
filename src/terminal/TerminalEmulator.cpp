@@ -5,22 +5,36 @@ extern "C"
 #include <unistd.h>
 }
 
+#include <array>
+#include <charconv>
 #include <csignal>
-#include <iostream>
+
+#include "check.hpp"
+
+using namespace std::string_literals;
+
+namespace {
+
+bool stdout_state = true;
+bool stderr_state = true;
+
+std::optional<std::pair<int, int>> size_;
+
+struct termios orig_termios_;
+struct termios cur_termios_;
 
 void
-TerminalEmulator::stop_raw_mode()
+stop_raw_mode()
 {
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios_) == -1) {
-        throw std::runtime_error("tcsetattr orig failed");
-    }
+    const auto c_api_ret = tcsetattr(STDIN_FILENO, TCSAFLUSH, &orig_termios_);
+    check(c_api_ret != -1, "tcsetattr orig failed");
 }
 
 void
-TerminalEmulator::start_raw_mode()
+start_raw_mode()
 {
-    if (tcgetattr(STDIN_FILENO, &orig_termios_) == -1)
-        throw std::runtime_error("tcgetattr failed");
+    auto c_api_ret = tcgetattr(STDIN_FILENO, &orig_termios_);
+    check(c_api_ret != -1, "tcgetattr orig failed");
 
     cur_termios_ = orig_termios_;
 
@@ -31,58 +45,122 @@ TerminalEmulator::start_raw_mode()
     cur_termios_.c_cc[VMIN] = 0;
     cur_termios_.c_cc[VTIME] = 1;
 
-    if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &cur_termios_) == -1) {
-        throw std::runtime_error("tcsetattr cur failed");
+    c_api_ret = tcsetattr(STDIN_FILENO, TCSAFLUSH, &cur_termios_);
+    check(c_api_ret != -1, "tcsetattr orig failed");
+}
+
+void
+detach_screen() noexcept
+{
+    constexpr std::string_view rmcup = "\033[?1049l\0338";
+    write(STDOUT_FILENO, rmcup.data(), rmcup.size());
+}
+void
+atach_screen() noexcept
+{
+    constexpr std::string_view smcup = "\033[7\033[?1049h";
+    write(STDOUT_FILENO, smcup.data(), smcup.size());
+}
+
+} // namespace
+
+void
+Terminal::turn_off_stderr() noexcept
+{
+    stderr_state = false;
+    freopen("/dev/null", "a+", stderr);
+}
+void
+Terminal::turn_on_stderr() noexcept
+{
+    stderr_state = true;
+    freopen("/dev/tty", "w", stderr);
+}
+void
+Terminal::turn_off_stdout() noexcept
+{
+    stdout_state = false;
+    freopen("/dev/null", "a+", stdout);
+}
+
+void
+Terminal::turn_on_stdout() noexcept
+{
+    stdout_state = true;
+    freopen("/dev/tty", "w", stdout);
+}
+void
+Terminal::clear() noexcept
+{
+    constexpr std::string_view clear = "\033[2J";
+    write(STDOUT_FILENO, clear.data(), clear.size());
+}
+void
+Terminal::flush() noexcept
+{
+    fflush(stdout);
+}
+void
+Terminal::update_size()
+{
+    if (!stdout_state) {
+        turn_on_stdout();
     }
-}
 
-TerminalEmulator&
-TerminalEmulator::get_singleton()
-{
-    static TerminalEmulator singleton_instance;
-    return singleton_instance;
+    const auto c_api_ret = ioctl(STDOUT_FILENO, TIOCGWINSZ, &size_);
+    check(c_api_ret != -1, "ioctl failed");
 }
+void
+Terminal::start_tui_mode()
+{
+    update_size();
+    cursor.move({ 1, 1 });
 
-void
-TerminalEmulator::update_size()
-{
-    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &size_) == -1)
-        throw std::runtime_error("ioctl failed");
-}
-void
-TerminalEmulator::detach_screen() noexcept
-{
-    printf("\033[?1049l\0338");
-    screen_status_ = ScreenStatus::detached;
-}
-void
-TerminalEmulator::atach_screen() noexcept
-{
-    printf("\033[7\033[?1049h");
-    screen_status_ = ScreenStatus::atached;
-}
-
-void
-TerminalEmulator::start_tui_mode()
-{
     atach_screen();
 
     start_raw_mode();
     cursor.hide();
 }
-void
-TerminalEmulator::set_text_color(const RGB color) noexcept
-{}
-void
-TerminalEmulator::reset_text_attributes() noexcept
-{}
-TerminalEmulator::TerminalEmulator()
+static std::string_view
+rgb_int_to_chars(const uint8_t rgb_int, char* conv_buff)
 {
-    update_size();
+
+    const auto [ptr, ec] = std::to_chars(conv_buff, conv_buff + 4, rgb_int);
+
+    return { conv_buff, ptr };
 }
 void
-TerminalEmulator::stop_tui_mode()
+Terminal::set_fg_color(const RGB& color) noexcept
 {
+    constexpr std::string_view esq_header = "\033[38;2;";
+    write(STDOUT_FILENO, esq_header.data(), esq_header.size());
+
+    std::array<char, 4> conv_buff;
+
+    const auto red_str = rgb_int_to_chars(color.r, conv_buff.data());
+    write(STDOUT_FILENO, red_str.data(), red_str.size());
+    write(STDOUT_FILENO, ";", 1);
+
+    const auto green_str = rgb_int_to_chars(color.g, conv_buff.data());
+    write(STDOUT_FILENO, green_str.data(), green_str.size());
+    write(STDOUT_FILENO, ";", 1);
+
+    const auto blue_str = rgb_int_to_chars(color.b, conv_buff.data());
+    write(STDOUT_FILENO, blue_str.data(), blue_str.size());
+    write(STDOUT_FILENO, "m", 1);
+}
+void
+Terminal::reset_attributes() noexcept
+{
+    constexpr std::string_view reset_str = "\033[0m";
+    write(STDOUT_FILENO, reset_str.data(), reset_str.size());
+}
+void
+Terminal::stop_tui_mode()
+{
+    if (!stdout_state) {
+        turn_on_stdout();
+    }
 
     cursor.show();
     stop_raw_mode();
@@ -90,70 +168,77 @@ TerminalEmulator::stop_tui_mode()
     detach_screen();
 }
 
-TerminalEmulator::~TerminalEmulator()
+std::pair<int, int>
+Terminal::get_size()
 {
-    if (screen_status_ != ScreenStatus::detached) {
-        stop_tui_mode();
-    }
-}
-
-TerminalEmulator::TermSize
-TerminalEmulator::get_size() const noexcept
-{
-    return size_;
-}
-
-TerminalEmulator::Cursor::Status
-TerminalEmulator::Cursor::get_status() noexcept
-{
-    return status_;
-}
-void
-TerminalEmulator::Cursor::hide() noexcept
-{
-    status_ = Status::hidden;
-    printf("%s", "\033[?;25;l");
-}
-void
-TerminalEmulator::Cursor::show() noexcept
-{
-    status_ = Status::visible;
-    printf("%s", "\033[?;25;h");
+    return size_.value();
 }
 
 void
-TerminalEmulator::Cursor::shift_left() noexcept(allow_noexcept)
+Terminal::Cursor::hide() noexcept
 {
-    --cur_pos_.x_;
-    printf("%s", "\033[1D");
+    constexpr std::string_view hide_str = "\033[?;25;l";
+    write(STDOUT_FILENO, hide_str.data(), hide_str.size());
 }
 void
-TerminalEmulator::Cursor::shift_right() noexcept(allow_noexcept)
+Terminal::Cursor::show() noexcept
 {
-    ++cur_pos_.x_;
-    printf("%s", "\033[1C");
+    constexpr std::string_view show_str = "\033[?;25;h";
+    write(STDOUT_FILENO, show_str.data(), show_str.size());
 }
-void
-TerminalEmulator::Cursor::shift_up() noexcept(allow_noexcept)
-{
-    --cur_pos_.y_;
-    printf("%s", "\033[1A");
-}
-void
-TerminalEmulator::Cursor::shift_down() noexcept(allow_noexcept)
-{
-    ++cur_pos_.y_;
-    printf("%s", "\033[1B");
-}
-void
-TerminalEmulator::Cursor::move(const Coord<int>& pos) noexcept(allow_noexcept)
-{
-    cur_pos_ = pos;
-    printf("\033[%d;%dH", pos.y_, pos.x_);
-}
-TerminalEmulator::Cursor::PosType
-TerminalEmulator::Cursor::get_pos() const noexcept
-{
 
-    return cur_pos_;
+void
+Terminal::Cursor::shift_left() noexcept
+{
+    auto& [x, y] = Terminal::cursor.pos_.value();
+    --x;
+
+    constexpr std::string_view shift_str = "\033[1D";
+    write(STDOUT_FILENO, shift_str.data(), shift_str.size());
+}
+void
+Terminal::Cursor::shift_right() noexcept
+{
+    auto& [x, y] = Terminal::cursor.pos_.value();
+    ++x;
+
+    constexpr std::string_view shift_str = "\033[1C";
+    write(STDOUT_FILENO, shift_str.data(), shift_str.size());
+}
+void
+Terminal::Cursor::shift_down() noexcept
+{
+    auto& [x, y] = Terminal::cursor.pos_.value();
+    --y;
+
+    constexpr std::string_view shift_str = "\033[1B";
+    write(STDOUT_FILENO, shift_str.data(), shift_str.size());
+}
+void
+Terminal::Cursor::shift_up() noexcept
+{
+    auto& [x, y] = Terminal::cursor.pos_.value();
+    ++y;
+
+    constexpr std::string_view shift_str = "\033[1A";
+    write(STDOUT_FILENO, shift_str.data(), shift_str.size());
+}
+void
+Terminal::Cursor::move(const std::pair<int, int> new_pos) noexcept
+{
+    pos_ = new_pos;
+    const auto& [x, y] = new_pos;
+
+    printf("\033[%d;%dH", y, x); // output of this specific sequance by parts doesnt work, no idea why
+}
+std::pair<int, int>
+Terminal::Cursor::get_pos() const noexcept
+{
+    return pos_.value();
+}
+Terminal::Cursor&
+Terminal::Cursor::get_singleton()
+{
+    static Cursor singleton_instance;
+    return singleton_instance;
 }

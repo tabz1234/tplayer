@@ -1,25 +1,23 @@
-#ifndef OPENAL_DEVICE_HPP
-#define OPENAL_DEVICE_HPP
+#pragma once
 
 extern "C"
 {
 #include <AL/alc.h>
 }
 
-namespace openal {
+namespace OpenAl {
 
-class Device
+struct Device
 {
+    static Device& get_singleton();
+
+  private:
     Device();
     ~Device();
 
     ALCdevice* alc_device_;
     ALCcontext* alc_ctx_;
-
-  public:
-    static Device& get_singleton();
 };
 
-}
+} // namespace OpenAl
 
-#endif

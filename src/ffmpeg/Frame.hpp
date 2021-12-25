@@ -1,5 +1,4 @@
-#ifndef FFMPEG_FRAME_HPP
-#define FFMPEG_FRAME_HPP
+#pragma once
 
 extern "C"
 {
@@ -9,26 +8,25 @@ extern "C"
 #include <stdexcept>
 #include <utility>
 
+#include "../check.hpp"
+#include "ffmpeg/MediaType.hpp"
+
 namespace FFmpeg {
 
-template<AVMediaType>
-class Frame final
+template<MediaType V>
+struct Frame final
 {
-  protected:
-    AVFrame* av_frame_ = nullptr;
+    const MediaType type = V;
 
-  public:
-    constexpr Frame(AVFrame* existing_frame) noexcept { av_frame_ = existing_frame; }
+    Frame(AVFrame* existing_frame) noexcept { av_frame_ = existing_frame; }
 
     Frame()
     {
         av_frame_ = av_frame_alloc();
-        if (av_frame_ == nullptr) [[unlikely]] {
-            throw std::runtime_error("av_frame_alloc failed");
-        }
+        check(av_frame_ != nullptr, " av_frame_alloc failed");
     }
 
-    constexpr AVFrame* ptr() noexcept { return av_frame_; }
+    AVFrame* ptr() noexcept { return av_frame_; }
 
     ~Frame() { av_frame_free(&av_frame_); }
 
@@ -41,10 +39,12 @@ class Frame final
     }
 
   private:
+    AVFrame* av_frame_ = nullptr;
+
+  public:
     Frame(const Frame&) = delete;
     Frame& operator=(const Frame&) = delete;
 };
 
-} // namespace ffmpeg
+} // namespace FFmpeg
 
-#endif

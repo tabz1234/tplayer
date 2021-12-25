@@ -24,9 +24,10 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 file(GLOB FFMPEG_SRC "src/ffmpeg/*.c*")
 file(GLOB OPENAL_SRC "src/openal/*.c*")
+file(GLOB TERMINAL_SRC "src/terminal/*.c*")
 file(GLOB BASE_SRC "src/*.c*")
 
-add_executable(${PROJECT_NAME} ${FFMPEG_SRC} ${OPENAL_SRC} ${BASE_SRC})
+add_executable(${PROJECT_NAME} ${FFMPEG_SRC} ${TERMINAL_SRC} ${OPENAL_SRC} ${BASE_SRC})
 
 if(CMAKE_BUILD_TYPE STREQUAL "debug")
 enable_testing()
@@ -41,7 +42,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${Link_libs})
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src /usr/include)
 
 
-if(CMAKE_BUILD_TYPE STREQUAL "release")
+if(CMAKE_BUILD_TYPE STREQUAL "debug")
 add_custom_command(TARGET ${PROJECT_NAME}
         POST_BUILD
 	COMMAND cp ${CMAKE_BINARY_DIR}/${PROJECT_NAME} ${CMAKE_SOURCE_DIR})

@@ -8,15 +8,15 @@ extern "C"
 #include <stdexcept>
 #include <thread>
 
-using namespace openal;
+using namespace OpenAl;
 
 StreamingSource::StreamingSource()
 {
     alGenSources(1, &al_source_);
-    alSourcef(al_source_, AL_PITCH, p_Pitch);
-    alSourcef(al_source_, AL_GAIN, p_Gain);
-    alSource3f(al_source_, AL_POSITION, p_Position[0], p_Position[1], p_Position[2]);
-    alSource3f(al_source_, AL_VELOCITY, p_Velocity[0], p_Velocity[1], p_Velocity[2]);
+    alSourcef(al_source_, AL_PITCH, pitch_);
+    alSourcef(al_source_, AL_GAIN, gain_);
+    alSource3f(al_source_, AL_POSITION, position_[0], position_[1], position_[2]);
+    alSource3f(al_source_, AL_VELOCITY, velocity_[0], velocity_[1], velocity_[2]);
 }
 void
 StreamingSource::play(const AVRational audio_ratio)
@@ -28,18 +28,16 @@ StreamingSource::play(const AVRational audio_ratio)
 
     alSourcePlay(al_source_);
 
-#if 1
-    const auto& a = std::chrono::duration<double>(
+    const auto&& play_duration_sec = std::chrono::duration<long double>(
       (buffer_list_.back().get_time_stamp() - buffer_list_.front().get_time_stamp()) * audio_ratio.num /
-      (double)audio_ratio.den);
-    std::this_thread::sleep_for(a);
-#else
+      (long double)audio_ratio.den);
+
+    std::this_thread::sleep_for(play_duration_sec);
 
     ALint state = AL_PLAYING;
-    while (state == AL_PLAYING) { //@TODO 100% cpu usage
+    while (state == AL_PLAYING) { // play_duration_sec doesnt include the last frame DURATION
         alGetSourcei(al_source_, AL_SOURCE_STATE, &state);
     }
-#endif
 
     for (auto& buff : buffer_list_) {
         alSourceUnqueueBuffers(al_source_, 1, buff.get_al_buffer_ptr());
@@ -49,7 +47,7 @@ StreamingSource::play(const AVRational audio_ratio)
 }
 
 void
-StreamingSource::add_buffer(openal::Buffer&& buffer)
+StreamingSource::add_buffer(OpenAl::Buffer&& buffer)
 {
     buffer_list_.emplace_back(std::move(buffer));
 }

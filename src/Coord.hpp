@@ -1,5 +1,4 @@
-#ifndef COORD_HPP
-#define COORD_HPP
+#pragma once
 
 template<typename T>
 struct Coord
@@ -10,4 +9,3 @@ struct Coord
     virtual ~Coord() = default;
 };
 
-#endif

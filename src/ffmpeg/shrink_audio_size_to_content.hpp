@@ -1,5 +1,4 @@
-#ifndef FFMPEG_SHRINK_AUDIO_SIZE_TO_CONTENT_HPP
-#define FFMPEG_SHRINK_AUDIO_SIZE_TO_CONTENT_HPP
+#pragma once
 
 extern "C"
 {
@@ -9,8 +8,7 @@ extern "C"
 namespace FFmpeg {
 
 void
-shrink_audio_size_to_content(AVFrame* aligned_frame);
+shrink_audio_size_to_content(AVFrame* aligned_frame) noexcept;
 
 }
 
-#endif

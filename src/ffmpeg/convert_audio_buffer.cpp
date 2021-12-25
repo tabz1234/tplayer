@@ -7,10 +7,12 @@ extern "C"
 
 #include <stdexcept>
 
-void
-FFmpeg::convert_audio_buffer_format(std::list<Frame<AVMEDIA_TYPE_AUDIO>>::iterator beg,
-                                    std::list<Frame<AVMEDIA_TYPE_AUDIO>>::iterator end,
-                                    const AVSampleFormat new_format)
+#include "../check.hpp"
+
+auto
+FFmpeg::convert_audio_buffer_format(std::list<Frame<MediaType::audio>>::iterator beg,
+                                    std::list<Frame<MediaType::audio>>::iterator end,
+                                    const AVSampleFormat new_format) -> void
 {
 
     SwrContext* swr_ctx_ = swr_alloc_set_opts(nullptr,
@@ -26,9 +28,7 @@ FFmpeg::convert_audio_buffer_format(std::list<Frame<AVMEDIA_TYPE_AUDIO>>::iterat
                                               0,
                                               nullptr);
 
-    if (swr_ctx_ == nullptr) [[unlikely]] {
-        throw std::runtime_error("swr_alloc_set_opts failed");
-    }
+    check(swr_ctx_ != nullptr, " swr_alloc_set_opts failed");
 
     int c_api_ret = swr_init(swr_ctx_);
     if (c_api_ret < 0) [[unlikely]] {
@@ -36,7 +36,7 @@ FFmpeg::convert_audio_buffer_format(std::list<Frame<AVMEDIA_TYPE_AUDIO>>::iterat
     }
 
     for (auto& it = beg; it != end; ++it) {
-        Frame<AVMEDIA_TYPE_AUDIO> resampled_frame;
+        Frame<MediaType::audio> resampled_frame;
 
         resampled_frame.ptr()->sample_rate = it->ptr()->sample_rate;
         resampled_frame.ptr()->channel_layout = it->ptr()->channel_layout;

@@ -7,7 +7,9 @@ extern "C"
 
 #include <stdexcept>
 
-using namespace openal;
+#include "../check.hpp"
+
+using namespace OpenAl;
 
 Device&
 Device::get_singleton()
@@ -19,29 +21,22 @@ Device::get_singleton()
 Device::Device()
 {
     alc_device_ = alcOpenDevice(nullptr);
-    if (!alc_device_) {
-        throw std::runtime_error("alcOpenDevice failed");
-    }
+    check(alc_device_ != nullptr, "alcOpenDevice failed");
 
     alc_ctx_ = alcCreateContext(alc_device_, nullptr);
-    if (!alc_ctx_) {
-        throw std::runtime_error("alcCreateContext failed");
-    }
+    check(alc_ctx_ != nullptr, "alcCreateContext failed");
 
-    if (!alcMakeContextCurrent(alc_ctx_)) {
-        throw std::runtime_error("alcMakeContextCurrent failed");
-    }
+    const auto c_api_ret = alcMakeContextCurrent(alc_ctx_);
+    check(c_api_ret != 0, "alcMakeContextCurrent failed");
 }
 
 Device::~Device()
 {
-    if (!alcMakeContextCurrent(nullptr)) {
-        throw std::runtime_error("alcMakeContextCurrent(nullptr) failed, in OpenAlDevice destructor");
-    }
+    auto c_api_ret = alcMakeContextCurrent(nullptr);
+    check(c_api_ret != 0, "alcMakeContextCurrent failed in destructor");
 
     alcDestroyContext(alc_ctx_);
 
-    if (!alcCloseDevice(alc_device_)) {
-        throw std::runtime_error("alcCloseDevice failed, in OpenAlDevice destructor");
-    }
+    c_api_ret = alcCloseDevice(alc_device_);
+    check(c_api_ret != 0, "alcCloseDevice failed in destructor");
 }
