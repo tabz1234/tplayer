@@ -3,8 +3,8 @@
 #include "Solaris.hpp"
 #include "terminal/TerminalEmulator.hpp"
 
-auto
-main(const int argc, const char** const argv) -> int
+int
+main(const int argc, const char** const argv)
 {
     try {
 
@@ -15,14 +15,10 @@ main(const int argc, const char** const argv) -> int
         return EXIT_SUCCESS;
 
     } catch (const std::exception& e) {
+        Solaris::print_msg_header();
 
-        Terminal::set_fg_color({ 255, 0, 0 });
-
-        printf("\nFATAL ERROR : %s\n", e.what());
-
-        Terminal::reset_attributes();
-
-        Terminal::flush();
+        Terminal::out<Terminal::RGB{ 255, 0, 0 }>(" _FATAL_ERROR_");
+        Terminal::out(" : ", e.what());
 
         return EXIT_FAILURE;
     }

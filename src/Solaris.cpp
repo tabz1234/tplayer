@@ -28,37 +28,49 @@ Solaris::Solaris(const int argc, const char** const argv)
     }
 
     const std::filesystem::path filepath = argv[1];
-    if (!std::filesystem::is_regular_file(filepath)) {
-        throw std::runtime_error("incorrect file path :"s + filepath.c_str());
-    }
+
+    const bool path_valid = std::filesystem::is_regular_file(filepath);
+    check(path_valid, "incorrect file path :" + filepath.string());
+
     filepath_ = std::move(filepath);
-
-    Terminal::start_tui_mode();
-
-    std::signal(SIGINT, [](int) { throw std::runtime_error("sigint"); });
 }
-
 void
 Solaris::run()
 {
-
-    std::signal(SIGWINCH, [](int) { Terminal::update_size(); });
-
-    Terminal::turn_off_stdout();
-    Terminal::turn_off_stderr();
-
-    Terminal::flush();
 
     std::optional<FFmpeg::MediaLoader<FFmpeg::MediaType::audio>> audio_loader;
     try {
         audio_loader.emplace(filepath_);
     } catch (const std::exception& e) {
-        Terminal::set_fg_color({ 0, 222, 255 });
 
-        std::cout << "\r\nWARNING : audio disabled because : " << e.what() << "\r\n";
-
-        Terminal::reset_attributes();
+        print_msg_header();
+        Terminal::out<Terminal::RGB{ 200, 180, 0 }>(" audio disabled ");
+        Terminal::out(" because : ", e.what());
     }
+
+    std::optional<FFmpeg::MediaLoader<FFmpeg::MediaType::video>> video_loader;
+    try {
+        video_loader.emplace(filepath_);
+    } catch (const std::exception& e) {
+
+        print_msg_header();
+        Terminal::out<Terminal::RGB{ 200, 180, 0 }>(" video disabled ");
+        Terminal::out(" because : ", e.what());
+    }
+    check(audio_loader.has_value() || video_loader.has_value(),
+          "input file constains nor audio nor video");
+
+    Terminal::flush();
+
+    Terminal::start_tui_mode();
+
+    std::signal(SIGWINCH, [](int) { Terminal::update_size(); });
+    std::signal(SIGINT, [](int) { throw std::runtime_error("sigint"); });
+
+    Terminal::turn_off_stdout();
+    Terminal::turn_off_stderr();
+
+    Terminal::flush();
 
     OpenAl::Device::get_singleton();
     OpenAl::StreamingSource sound_source;
@@ -82,8 +94,13 @@ Solaris::run()
         sound_source.play(audio_loader->get_time_ratio());
     }
 }
-
+void
+Solaris::print_msg_header()
+{
+    Terminal::out<Terminal::RGB{ 0, 230, 230 }>("\n[[Solaris]]->");
+}
 Solaris::~Solaris()
 {
+    Terminal::turn_on_stdout();
     Terminal::stop_tui_mode();
 }

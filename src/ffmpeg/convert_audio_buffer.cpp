@@ -31,9 +31,7 @@ FFmpeg::convert_audio_buffer_format(std::list<Frame<MediaType::audio>>::iterator
     check(swr_ctx_ != nullptr, " swr_alloc_set_opts failed");
 
     int c_api_ret = swr_init(swr_ctx_);
-    if (c_api_ret < 0) [[unlikely]] {
-        throw std::runtime_error("swr_init failed");
-    }
+    check(c_api_ret >= 0, "swr_init failed");
 
     for (auto& it = beg; it != end; ++it) {
         Frame<MediaType::audio> resampled_frame;

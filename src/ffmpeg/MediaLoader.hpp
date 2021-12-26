@@ -23,6 +23,8 @@ template<MediaType Type_>
 class MediaLoader final
 {
 
+    // list because most of operations on frame buffer is insertion and foreach
+    // also random acces is not needed
     std::list<Frame<Type_>> frame_buffer_;
 
     AVRational av_time_base_;

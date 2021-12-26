@@ -7,7 +7,9 @@ extern "C"
 
 #include <array>
 #include <charconv>
+#include <concepts>
 #include <csignal>
+#include <span>
 
 #include "check.hpp"
 
@@ -95,6 +97,36 @@ Terminal::clear() noexcept
     constexpr std::string_view clear = "\033[2J";
     write(STDOUT_FILENO, clear.data(), clear.size());
 }
+template<std::integral IntT, std::integral auto buff_size_>
+std::string_view static int_to_chars(const IntT int_val, std::span<char, buff_size_> buff_view)
+{
+
+    const auto [ptr, ec] = std::to_chars(buff_view.data(), buff_view.data() + buff_view.size(), int_val);
+
+    return { buff_view.data(), ptr };
+}
+void
+Terminal::set_fg_color(const uint8_t r, const uint8_t g, const uint8_t b) noexcept
+{
+
+    constexpr std::string_view esq_header = "\033[38;2;";
+    write(STDOUT_FILENO, esq_header.data(), esq_header.size());
+
+    constexpr auto buff_size = 4;
+    std::array<char, buff_size> conv_buff;
+
+    const auto red_str = int_to_chars<uint8_t, buff_size>(r, conv_buff);
+    write(STDOUT_FILENO, red_str.data(), red_str.size());
+    write(STDOUT_FILENO, ";", 1);
+
+    const auto green_str = int_to_chars<uint8_t, buff_size>(g, conv_buff);
+    write(STDOUT_FILENO, green_str.data(), green_str.size());
+    write(STDOUT_FILENO, ";", 1);
+
+    const auto blue_str = int_to_chars<uint8_t, buff_size>(b, conv_buff);
+    write(STDOUT_FILENO, blue_str.data(), blue_str.size());
+    write(STDOUT_FILENO, "m", 1);
+}
 void
 Terminal::flush() noexcept
 {
@@ -113,41 +145,13 @@ Terminal::update_size()
 void
 Terminal::start_tui_mode()
 {
-    update_size();
-    cursor.move({ 1, 1 });
-
     atach_screen();
+
+    update_size();
+    cursor.move(1, 1);
 
     start_raw_mode();
     cursor.hide();
-}
-static std::string_view
-rgb_int_to_chars(const uint8_t rgb_int, char* conv_buff)
-{
-
-    const auto [ptr, ec] = std::to_chars(conv_buff, conv_buff + 4, rgb_int);
-
-    return { conv_buff, ptr };
-}
-void
-Terminal::set_fg_color(const RGB& color) noexcept
-{
-    constexpr std::string_view esq_header = "\033[38;2;";
-    write(STDOUT_FILENO, esq_header.data(), esq_header.size());
-
-    std::array<char, 4> conv_buff;
-
-    const auto red_str = rgb_int_to_chars(color.r, conv_buff.data());
-    write(STDOUT_FILENO, red_str.data(), red_str.size());
-    write(STDOUT_FILENO, ";", 1);
-
-    const auto green_str = rgb_int_to_chars(color.g, conv_buff.data());
-    write(STDOUT_FILENO, green_str.data(), green_str.size());
-    write(STDOUT_FILENO, ";", 1);
-
-    const auto blue_str = rgb_int_to_chars(color.b, conv_buff.data());
-    write(STDOUT_FILENO, blue_str.data(), blue_str.size());
-    write(STDOUT_FILENO, "m", 1);
 }
 void
 Terminal::reset_attributes() noexcept
@@ -158,14 +162,11 @@ Terminal::reset_attributes() noexcept
 void
 Terminal::stop_tui_mode()
 {
-    if (!stdout_state) {
-        turn_on_stdout();
-    }
+
+    detach_screen();
 
     cursor.show();
     stop_raw_mode();
-
-    detach_screen();
 }
 
 std::pair<int, int>
@@ -174,6 +175,12 @@ Terminal::get_size()
     return size_.value();
 }
 
+void
+Terminal::Cursor::move(const int x, const int y) noexcept
+{
+    pos_.emplace(x, y);
+    printf("\033[%d;%dH", y, x); // output of this specific sequance by parts doesnt work, no idea why
+}
 void
 Terminal::Cursor::hide() noexcept
 {
@@ -222,14 +229,6 @@ Terminal::Cursor::shift_up() noexcept
 
     constexpr std::string_view shift_str = "\033[1A";
     write(STDOUT_FILENO, shift_str.data(), shift_str.size());
-}
-void
-Terminal::Cursor::move(const std::pair<int, int> new_pos) noexcept
-{
-    pos_ = new_pos;
-    const auto& [x, y] = new_pos;
-
-    printf("\033[%d;%dH", y, x); // output of this specific sequance by parts doesnt work, no idea why
 }
 std::pair<int, int>
 Terminal::Cursor::get_pos() const noexcept
