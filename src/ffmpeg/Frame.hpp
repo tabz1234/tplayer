@@ -16,7 +16,6 @@ namespace FFmpeg {
 template<MediaType V>
 struct Frame final
 {
-    const MediaType type = V;
 
     Frame(AVFrame* existing_frame) noexcept { av_frame_ = existing_frame; }
 
@@ -30,11 +29,12 @@ struct Frame final
 
     ~Frame() { av_frame_free(&av_frame_); }
 
-    Frame(Frame&& rval) noexcept { *this = std::move(rval); }
+    Frame(Frame&& rval) noexcept
+      : av_frame_{ std::exchange(rval.av_frame_, nullptr) }
+    {}
     Frame& operator=(Frame&& rval) noexcept
     {
-        this->~Frame();
-        this->av_frame_ = std::exchange(rval.av_frame_, nullptr);
+        std::swap(av_frame_, rval.av_frame_);
         return *this;
     }
 

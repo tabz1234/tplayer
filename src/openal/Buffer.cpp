@@ -42,17 +42,15 @@ Buffer::get_time_stamp() const noexcept
 
 Buffer::Buffer(Buffer&& rval) noexcept
 {
-    *this = std::move(rval);
+    al_buffer_ = std::exchange(rval.al_buffer_, 0);
+    time_stamp_ = rval.time_stamp_;
 }
 
 Buffer&
 Buffer::operator=(Buffer&& rval) noexcept
 {
-    // this->~Buffer();//leads to incorrect playback, i dont know how openal manages resources, but
-    // without destructor three are no memory leaks or any other problems
-
-    this->al_buffer_ = std::exchange(rval.al_buffer_, 0);
-    this->time_stamp_ = rval.time_stamp_;
+    std::swap(al_buffer_, rval.al_buffer_);
+    time_stamp_ = rval.time_stamp_;
 
     return *this;
 }

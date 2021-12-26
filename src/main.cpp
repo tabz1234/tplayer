@@ -15,9 +15,9 @@ main(const int argc, const char** const argv)
         return EXIT_SUCCESS;
 
     } catch (const std::exception& e) {
-        Solaris::print_msg_header();
+        Solaris::print_msg_prefix();
 
-        Terminal::out<Terminal::RGB{ 255, 0, 0 }>(" _FATAL_ERROR_");
+        Terminal::out<Terminal::RGB{ 255, 0, 0 }>(" FATAL ERROR ");
         Terminal::out(" : ", e.what());
 
         return EXIT_FAILURE;

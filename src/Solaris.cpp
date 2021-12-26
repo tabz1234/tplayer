@@ -43,7 +43,7 @@ Solaris::run()
         audio_loader.emplace(filepath_);
     } catch (const std::exception& e) {
 
-        print_msg_header();
+        print_msg_prefix();
         Terminal::out<Terminal::RGB{ 200, 180, 0 }>(" audio disabled ");
         Terminal::out(" because : ", e.what());
     }
@@ -53,14 +53,12 @@ Solaris::run()
         video_loader.emplace(filepath_);
     } catch (const std::exception& e) {
 
-        print_msg_header();
+        print_msg_prefix();
         Terminal::out<Terminal::RGB{ 200, 180, 0 }>(" video disabled ");
         Terminal::out(" because : ", e.what());
     }
     check(audio_loader.has_value() || video_loader.has_value(),
           "input file constains nor audio nor video");
-
-    Terminal::flush();
 
     Terminal::start_tui_mode();
 
@@ -95,9 +93,11 @@ Solaris::run()
     }
 }
 void
-Solaris::print_msg_header()
+Solaris::print_msg_prefix()
 {
-    Terminal::out<Terminal::RGB{ 0, 230, 230 }>("\n[[Solaris]]->");
+    Terminal::out<Terminal::RGB{ 0, 200, 200 }>("\n[[");
+    Terminal::out("Solaris");
+    Terminal::out<Terminal::RGB{ 0, 200, 200 }>("]]~~>");
 }
 Solaris::~Solaris()
 {

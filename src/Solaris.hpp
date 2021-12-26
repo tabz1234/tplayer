@@ -8,7 +8,7 @@ struct Solaris final
     Solaris(const int argc, const char** const argv);
 
     void run();
-    static void print_msg_header();
+    static void print_msg_prefix();
 
     ~Solaris();
 

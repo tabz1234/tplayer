@@ -101,17 +101,7 @@ class MediaLoader final
             if (av_packet_->stream_index == stream_index_) {
 
                 int c_api_ret = avcodec_send_packet(av_codec_ctx_, av_packet_);
-                if (c_api_ret != 0) {
-
-                    check(c_api_ret == AVERROR(EAGAIN), loader_type_str + "avcodec_send_packet failed");
-
-                    Frame<Type_> bloat_frame;
-                    while (avcodec_receive_frame(av_codec_ctx_, bloat_frame.ptr()) != AVERROR_EOF) {
-                    }
-
-                    av_packet_unref(av_packet_);
-                    continue;
-                }
+                check(c_api_ret == 0, loader_type_str + "avcodec_send_packet failed");
 
                 do {
 
@@ -127,8 +117,9 @@ class MediaLoader final
 
                 av_packet_unref(av_packet_);
                 return true;
-            }
-        }
+            } // if
+            av_packet_unref(av_packet_);
+        } // while
 
         av_packet_unref(av_packet_);
         return false;
