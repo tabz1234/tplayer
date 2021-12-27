@@ -2,8 +2,7 @@
 
 #include <filesystem>
 
-struct Solaris final
-{
+struct Solaris final {
 
     Solaris(const int argc, const char** const argv);
 

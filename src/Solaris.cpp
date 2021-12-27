@@ -19,8 +19,7 @@
 using namespace std::chrono_literals;
 using namespace std::string_literals;
 
-Solaris::Solaris(const int argc, const char** const argv)
-{
+Solaris::Solaris(const int argc, const char** const argv) {
 
     //@TODO argument parsing
     if (argc == 1) {
@@ -34,9 +33,7 @@ Solaris::Solaris(const int argc, const char** const argv)
 
     filepath_ = std::move(filepath);
 }
-void
-Solaris::run()
-{
+void Solaris::run() {
 
     std::optional<FFmpeg::MediaLoader<FFmpeg::MediaType::audio>> audio_loader;
     try {
@@ -44,7 +41,7 @@ Solaris::run()
     } catch (const std::exception& e) {
 
         print_msg_prefix();
-        Terminal::out<Terminal::RGB{ 200, 180, 0 }>(" audio disabled ");
+        Terminal::out<Terminal::RGB{200, 180, 0}>(" audio disabled ");
         Terminal::out(" because : ", e.what());
     }
 
@@ -54,7 +51,7 @@ Solaris::run()
     } catch (const std::exception& e) {
 
         print_msg_prefix();
-        Terminal::out<Terminal::RGB{ 200, 180, 0 }>(" video disabled ");
+        Terminal::out<Terminal::RGB{200, 180, 0}>(" video disabled ");
         Terminal::out(" because : ", e.what());
     }
     check(audio_loader.has_value() || video_loader.has_value(),
@@ -62,8 +59,12 @@ Solaris::run()
 
     Terminal::start_tui_mode();
 
-    std::signal(SIGWINCH, [](int) { Terminal::update_size(); });
-    std::signal(SIGINT, [](int) { throw std::runtime_error("sigint"); });
+    std::signal(SIGWINCH, [](int) {
+        Terminal::update_size();
+    });
+    std::signal(SIGINT, [](int) {
+        throw std::runtime_error("sigint");
+    });
 
     Terminal::turn_off_stdout();
     Terminal::turn_off_stderr();
@@ -83,7 +84,9 @@ Solaris::run()
         }
         auto audio_buffer = audio_loader->pop_buffer();
 
-        FFmpeg::convert_audio_buffer_format(audio_buffer.begin(), audio_buffer.end(), AV_SAMPLE_FMT_FLT);
+        FFmpeg::convert_audio_buffer_format(audio_buffer.begin(),
+                                            audio_buffer.end(),
+                                            AV_SAMPLE_FMT_FLT);
 
         for (auto& elem : audio_buffer) {
             FFmpeg::shrink_audio_size_to_content(elem.ptr());
@@ -92,15 +95,12 @@ Solaris::run()
         sound_source.play(audio_loader->get_time_ratio());
     }
 }
-void
-Solaris::print_msg_prefix()
-{
-    Terminal::out<Terminal::RGB{ 0, 200, 200 }>("\n[[");
+void Solaris::print_msg_prefix() {
+    Terminal::out<Terminal::RGB{0, 200, 200}>("\n[[");
     Terminal::out("Solaris");
-    Terminal::out<Terminal::RGB{ 0, 200, 200 }>("]]~~>");
+    Terminal::out<Terminal::RGB{0, 200, 200}>("]]~~>");
 }
-Solaris::~Solaris()
-{
+Solaris::~Solaris() {
     Terminal::turn_on_stdout();
     Terminal::stop_tui_mode();
 }

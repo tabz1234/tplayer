@@ -1,7 +1,6 @@
 #pragma once
 
-extern "C"
-{
+extern "C" {
 #include <AL/al.h>
 }
 
@@ -11,29 +10,27 @@ extern "C"
 
 namespace OpenAl {
 
-struct Buffer final
-{
+    struct Buffer final {
 
-    Buffer(FFmpeg::Frame<FFmpeg::MediaType::audio>&& audio_frame);
+        Buffer(FFmpeg::Frame<FFmpeg::MediaType::audio>&& audio_frame);
 
-    ALuint get_al_buffer() noexcept;
-    ALuint* get_al_buffer_ptr() noexcept;
+        ALuint get_al_buffer() noexcept;
+        ALuint* get_al_buffer_ptr() noexcept;
 
-    int64_t get_time_stamp() const noexcept;
+        int64_t get_time_stamp() const noexcept;
 
-    Buffer(Buffer&&) noexcept;
-    Buffer& operator=(Buffer&&) noexcept;
+        Buffer(Buffer&&) noexcept;
+        Buffer& operator=(Buffer&&) noexcept;
 
-    ~Buffer();
+        ~Buffer();
 
-  private:
-    ALuint al_buffer_;
-    int64_t time_stamp_;
+      private:
+        ALuint al_buffer_;
+        int64_t time_stamp_;
 
-  public:
-    Buffer(const Buffer&) = delete;
-    Buffer& operator=(const Buffer&) = delete;
-};
+      public:
+        Buffer(const Buffer&) = delete;
+        Buffer& operator=(const Buffer&) = delete;
+    };
 
 } // namespace OpenAl
-

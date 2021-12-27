@@ -1,7 +1,6 @@
 #pragma once
 
-extern "C"
-{
+extern "C" {
 #include <libavutil/samplefmt.h>
 }
 
@@ -10,15 +9,14 @@ extern "C"
 
 namespace FFmpeg {
 
-enum class MediaType
-{
-    audio = AVMEDIA_TYPE_AUDIO,
-    video = AVMEDIA_TYPE_VIDEO
+    enum class MediaType {
+        audio = AVMEDIA_TYPE_AUDIO,
+        video = AVMEDIA_TYPE_VIDEO
 
-};
+    };
 
-const std::unordered_map<MediaType, std::string_view> MediaTypeStrings = { { MediaType::audio, "audio" },
-                                                                           { MediaType::video,
-                                                                             "video" } };
+    const std::unordered_map<MediaType, std::string_view> MediaTypeStrings = {
+        {MediaType::audio, "audio"},
+        {MediaType::video, "video"}};
 
-}
+} // namespace FFmpeg

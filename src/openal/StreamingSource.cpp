@@ -1,7 +1,6 @@
 #include "openal/StreamingSource.hpp"
 
-extern "C"
-{
+extern "C" {
 #include <AL/al.h>
 }
 
@@ -10,17 +9,14 @@ extern "C"
 
 using namespace OpenAl;
 
-StreamingSource::StreamingSource()
-{
+StreamingSource::StreamingSource() {
     alGenSources(1, &al_source_);
     alSourcef(al_source_, AL_PITCH, pitch_);
     alSourcef(al_source_, AL_GAIN, gain_);
     alSource3f(al_source_, AL_POSITION, position_[0], position_[1], position_[2]);
     alSource3f(al_source_, AL_VELOCITY, velocity_[0], velocity_[1], velocity_[2]);
 }
-void
-StreamingSource::play(const AVRational audio_ratio)
-{
+void StreamingSource::play(const AVRational audio_ratio) {
 
     for (auto& buff : buffer_list_) {
         alSourceQueueBuffers(al_source_, 1, buff.get_al_buffer_ptr());
@@ -29,8 +25,8 @@ StreamingSource::play(const AVRational audio_ratio)
     alSourcePlay(al_source_);
 
     const auto&& play_duration_sec = std::chrono::duration<long double>(
-      (buffer_list_.back().get_time_stamp() - buffer_list_.front().get_time_stamp()) * audio_ratio.num /
-      (long double)audio_ratio.den);
+        (buffer_list_.back().get_time_stamp() - buffer_list_.front().get_time_stamp()) *
+        audio_ratio.num / (long double)audio_ratio.den);
 
     std::this_thread::sleep_for(play_duration_sec);
 
@@ -46,12 +42,9 @@ StreamingSource::play(const AVRational audio_ratio)
     buffer_list_.clear();
 }
 
-void
-StreamingSource::add_buffer(OpenAl::Buffer&& buffer)
-{
+void StreamingSource::add_buffer(OpenAl::Buffer&& buffer) {
     buffer_list_.emplace_back(std::move(buffer));
 }
-StreamingSource::~StreamingSource()
-{
+StreamingSource::~StreamingSource() {
     alDeleteSources(1, &al_source_);
 }

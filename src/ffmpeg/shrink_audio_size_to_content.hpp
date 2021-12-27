@@ -1,14 +1,11 @@
 #pragma once
 
-extern "C"
-{
+extern "C" {
 #include <libavutil/frame.h>
 }
 
 namespace FFmpeg {
 
-void
-shrink_audio_size_to_content(AVFrame* aligned_frame) noexcept;
+    void shrink_audio_size_to_content(AVFrame* aligned_frame) noexcept;
 
 }
-

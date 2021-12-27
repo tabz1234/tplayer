@@ -1,7 +1,6 @@
 #include "Device.hpp"
 
-extern "C"
-{
+extern "C" {
 #include <AL/al.h>
 }
 
@@ -11,15 +10,12 @@ extern "C"
 
 using namespace OpenAl;
 
-Device&
-Device::get_singleton()
-{
+Device& Device::get_singleton() {
     static Device singleton_instance;
     return singleton_instance;
 }
 
-Device::Device()
-{
+Device::Device() {
     alc_device_ = alcOpenDevice(nullptr);
     check(alc_device_ != nullptr, "alcOpenDevice failed");
 
@@ -30,8 +26,7 @@ Device::Device()
     check(c_api_ret != 0, "alcMakeContextCurrent failed");
 }
 
-Device::~Device()
-{
+Device::~Device() {
     auto c_api_ret = alcMakeContextCurrent(nullptr);
     check(c_api_ret != 0, "alcMakeContextCurrent failed in destructor");
 

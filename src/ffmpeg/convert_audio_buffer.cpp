@@ -1,7 +1,6 @@
 #include "convert_audio_buffer.hpp"
 
-extern "C"
-{
+extern "C" {
 #include <libswresample/swresample.h>
 }
 
@@ -9,11 +8,9 @@ extern "C"
 
 #include "../check.hpp"
 
-auto
-FFmpeg::convert_audio_buffer_format(std::list<Frame<MediaType::audio>>::iterator beg,
-                                    std::list<Frame<MediaType::audio>>::iterator end,
-                                    const AVSampleFormat new_format) -> void
-{
+auto FFmpeg::convert_audio_buffer_format(std::list<Frame<MediaType::audio>>::iterator beg,
+                                         std::list<Frame<MediaType::audio>>::iterator end,
+                                         const AVSampleFormat new_format) -> void {
 
     SwrContext* swr_ctx_ = swr_alloc_set_opts(nullptr,
 
