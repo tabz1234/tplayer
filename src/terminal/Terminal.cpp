@@ -1,4 +1,4 @@
-#include "TerminalEmulator.hpp"
+#include "Terminal.hpp"
 
 extern "C" {
 #include <unistd.h>
@@ -30,6 +30,7 @@ namespace {
     }
 
     void start_raw_mode() {
+
         auto c_api_ret = tcgetattr(STDIN_FILENO, &orig_termios_);
         check(c_api_ret != -1, "tcgetattr orig failed");
 
@@ -47,39 +48,49 @@ namespace {
     }
 
     void detach_screen() noexcept {
-        constexpr std::string_view rmcup = "\033[?1049l\0338";
-        write(STDOUT_FILENO, rmcup.data(), rmcup.size());
+        Terminal::write_str("\033[?1049l\0338");
     }
     void atach_screen() noexcept {
-        constexpr std::string_view smcup = "\033[7\033[?1049h";
-        write(STDOUT_FILENO, smcup.data(), smcup.size());
+        Terminal::write_str("\033[7\033[?1049h");
     }
 
 } // namespace
 
-void Terminal::turn_off_stderr() noexcept {
+namespace Terminal {
+    static auto& cursor = Cursor::get_singleton();
+}
+
+inline void Terminal::write_str(std::string_view str) noexcept {
+    write(STDOUT_FILENO, str.data(), str.size());
+}
+
+inline void Terminal::write_char(const char ch) noexcept {
+    write(STDOUT_FILENO, &ch, 1);
+}
+
+void Terminal::redirect_stderr() noexcept {
     stderr_state = false;
     freopen("/dev/null", "a+", stderr);
 }
-void Terminal::turn_on_stderr() noexcept {
+void Terminal::connect_stderr() noexcept {
     stderr_state = true;
     freopen("/dev/tty", "w", stderr);
 }
-void Terminal::turn_off_stdout() noexcept {
+void Terminal::redirect_stdout() noexcept {
     stdout_state = false;
     freopen("/dev/null", "a+", stdout);
 }
-
-void Terminal::turn_on_stdout() noexcept {
+void Terminal::connect_stdout() noexcept {
     stdout_state = true;
     freopen("/dev/tty", "w", stdout);
 }
+
 void Terminal::clear() noexcept {
-    constexpr std::string_view clear = "\033[2J";
-    write(STDOUT_FILENO, clear.data(), clear.size());
+    Terminal::write_str("\033[2J");
 }
 template <std::integral IntT, std::integral auto buff_size_>
-std::string_view static int_to_chars(const IntT int_val, std::span<char, buff_size_> buff_view) {
+std::string_view static integer_to_chars(const IntT int_val,
+                                         std::span<char, buff_size_> buff_view) {
 
     const auto [ptr, ec] =
         std::to_chars(buff_view.data(), buff_view.data() + buff_view.size(), int_val);
@@ -88,36 +99,38 @@ std::string_view static int_to_chars(const IntT int_val, std::span<char, buff_si
 }
 void Terminal::set_fg_color(const uint8_t r, const uint8_t g, const uint8_t b) noexcept {
 
-    constexpr std::string_view esq_header = "\033[38;2;";
-    write(STDOUT_FILENO, esq_header.data(), esq_header.size());
+    Terminal::write_str("\033[38;2;");
 
     constexpr auto buff_size = 4;
     std::array<char, buff_size> conv_buff;
 
-    const auto red_str = int_to_chars<uint8_t, buff_size>(r, conv_buff);
-    write(STDOUT_FILENO, red_str.data(), red_str.size());
-    write(STDOUT_FILENO, ";", 1);
+    const auto red_str = integer_to_chars<uint8_t, buff_size>(r, conv_buff);
+    Terminal::write_str(red_str);
+    Terminal::write_char(';');
 
-    const auto green_str = int_to_chars<uint8_t, buff_size>(g, conv_buff);
-    write(STDOUT_FILENO, green_str.data(), green_str.size());
-    write(STDOUT_FILENO, ";", 1);
+    const auto green_str = integer_to_chars<uint8_t, buff_size>(g, conv_buff);
+    Terminal::write_str(green_str);
+    Terminal::write_char(';');
 
-    const auto blue_str = int_to_chars<uint8_t, buff_size>(b, conv_buff);
-    write(STDOUT_FILENO, blue_str.data(), blue_str.size());
-    write(STDOUT_FILENO, "m", 1);
+    const auto blue_str = integer_to_chars<uint8_t, buff_size>(b, conv_buff);
+    Terminal::write_str(blue_str);
+    Terminal::write_char('m');
 }
 void Terminal::flush() noexcept {
     fflush(stdout);
 }
 void Terminal::update_size() {
+
     if (!stdout_state) {
-        turn_on_stdout();
-    }
+        connect_stdout();
+    } // one cant control when sigwinch raises so check is not consumer
+      // responsibility
 
     const auto c_api_ret = ioctl(STDOUT_FILENO, TIOCGWINSZ, &size_);
     check(c_api_ret != -1, "ioctl failed");
 }
 void Terminal::start_tui_mode() {
+
     atach_screen();
 
     update_size();
@@ -127,8 +140,7 @@ void Terminal::start_tui_mode() {
     cursor.hide();
 }
 void Terminal::reset_attributes() noexcept {
-    constexpr std::string_view reset_str = "\033[0m";
-    write(STDOUT_FILENO, reset_str.data(), reset_str.size());
+    Terminal::write_str("\033[0m");
 }
 void Terminal::stop_tui_mode() {
 
@@ -143,47 +155,50 @@ std::pair<int, int> Terminal::get_size() {
 }
 
 void Terminal::Cursor::move(const int x, const int y) noexcept {
-    pos_.emplace(x, y);
-    printf("\033[%d;%dH",
-           y,
-           x); // output of this specific sequance by parts doesnt work, no idea why
+
+    pos_ = {x, y};
+
+    std::string esq_str;
+    esq_str.reserve(50);
+
+    esq_str += "\033[";
+    esq_str += std::to_string(y);
+    esq_str += ";";
+    esq_str += std::to_string(x);
+    esq_str += "H";
+
+    write_str(esq_str);
 }
 void Terminal::Cursor::hide() noexcept {
-    constexpr std::string_view hide_str = "\033[?;25;l";
-    write(STDOUT_FILENO, hide_str.data(), hide_str.size());
+    write_str("\033[?;25;l");
 }
 void Terminal::Cursor::show() noexcept {
-    constexpr std::string_view show_str = "\033[?;25;h";
-    write(STDOUT_FILENO, show_str.data(), show_str.size());
+    write_str("\033[?;25;h");
 }
 
 void Terminal::Cursor::shift_left() noexcept {
     auto& [x, y] = Terminal::cursor.pos_.value();
     --x;
 
-    constexpr std::string_view shift_str = "\033[1D";
-    write(STDOUT_FILENO, shift_str.data(), shift_str.size());
+    write_str("\033[1D");
 }
 void Terminal::Cursor::shift_right() noexcept {
     auto& [x, y] = Terminal::cursor.pos_.value();
     ++x;
 
-    constexpr std::string_view shift_str = "\033[1C";
-    write(STDOUT_FILENO, shift_str.data(), shift_str.size());
+    write_str("\033[1C");
 }
 void Terminal::Cursor::shift_down() noexcept {
     auto& [x, y] = Terminal::cursor.pos_.value();
     --y;
 
-    constexpr std::string_view shift_str = "\033[1B";
-    write(STDOUT_FILENO, shift_str.data(), shift_str.size());
+    write_str("\033[1B");
 }
 void Terminal::Cursor::shift_up() noexcept {
     auto& [x, y] = Terminal::cursor.pos_.value();
     ++y;
 
-    constexpr std::string_view shift_str = "\033[1A";
-    write(STDOUT_FILENO, shift_str.data(), shift_str.size());
+    write_str("\033[1A");
 }
 std::pair<int, int> Terminal::Cursor::get_pos() const noexcept {
     return pos_.value();

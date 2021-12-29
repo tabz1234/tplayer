@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <thread>
 
-#include "terminal/TerminalEmulator.hpp"
+#include "terminal/Terminal.hpp"
 
 #include "openal/Device.hpp"
 #include "openal/StreamingSource.hpp"
@@ -39,20 +39,28 @@ void Solaris::run() {
     try {
         audio_loader.emplace(filepath_);
     } catch (const std::exception& e) {
+        audio_loader.reset();
 
         print_msg_prefix();
-        Terminal::out<Terminal::RGB{200, 180, 0}>(" audio disabled ");
-        Terminal::out(" because : ", e.what());
+        Terminal::out(RGB_t{200, 180, 0},
+                      " audio disabled ",
+                      Terminal::DefaultAttr,
+                      "because : ",
+                      e.what());
     }
 
     std::optional<FFmpeg::MediaLoader<FFmpeg::MediaType::video>> video_loader;
     try {
         video_loader.emplace(filepath_);
     } catch (const std::exception& e) {
+        video_loader.reset();
 
         print_msg_prefix();
-        Terminal::out<Terminal::RGB{200, 180, 0}>(" video disabled ");
-        Terminal::out(" because : ", e.what());
+        Terminal::out(RGB_t{200, 180, 0},
+                      " video disabled ",
+                      Terminal::DefaultAttr,
+                      "because : ",
+                      e.what());
     }
     check(audio_loader.has_value() || video_loader.has_value(),
           "input file constains nor audio nor video");
@@ -66,8 +74,8 @@ void Solaris::run() {
         throw std::runtime_error("sigint");
     });
 
-    Terminal::turn_off_stdout();
-    Terminal::turn_off_stderr();
+    Terminal::redirect_stdout();
+    Terminal::redirect_stderr();
 
     Terminal::flush();
 
@@ -96,11 +104,18 @@ void Solaris::run() {
     }
 }
 void Solaris::print_msg_prefix() {
-    Terminal::out<Terminal::RGB{0, 200, 200}>("\n[[");
-    Terminal::out("Solaris");
-    Terminal::out<Terminal::RGB{0, 200, 200}>("]]~~>");
+
+    Terminal::out("\n",
+                  RGB_t{0, 200, 200},
+                  "[[",
+                  Terminal::DefaultAttr,
+                  "Solaris",
+                  RGB_t{0, 200, 200},
+                  "]]",
+                  Terminal::DefaultAttr,
+                  "~~>");
 }
 Solaris::~Solaris() {
-    Terminal::turn_on_stdout();
+    Terminal::connect_stdout();
     Terminal::stop_tui_mode();
 }

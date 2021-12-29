@@ -41,12 +41,3 @@ endif()
 target_link_libraries(${PROJECT_NAME} PUBLIC ${Link_libs})
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_SOURCE_DIR}/src /usr/include)
 
-
-if(CMAKE_BUILD_TYPE STREQUAL "debug")
-add_custom_command(TARGET ${PROJECT_NAME}
-        POST_BUILD
-	COMMAND cp ${CMAKE_BINARY_DIR}/${PROJECT_NAME} ${CMAKE_SOURCE_DIR})
-endif()
-
-
-

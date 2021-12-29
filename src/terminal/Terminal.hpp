@@ -9,6 +9,7 @@ extern "C" {
 #include <charconv>
 #include <concepts>
 #include <cstdio>
+#include <filesystem>
 #include <iostream>
 #include <optional>
 #include <span>
@@ -16,23 +17,22 @@ extern "C" {
 #include <tuple>
 #include <utility>
 
+#include "../RGB.hpp"
+
 namespace Terminal {
 
     void set_fg_color(const uint8_t r, const uint8_t g, const uint8_t b) noexcept;
-
-    void turn_off_stderr() noexcept;
-
-    void turn_on_stderr() noexcept;
-
-    void turn_off_stdout() noexcept;
-
-    void turn_on_stdout() noexcept;
-
-    void clear() noexcept;
+    void reset_attributes() noexcept;
 
     void flush() noexcept;
 
-    void reset_attributes() noexcept;
+    void redirect_stderr() noexcept;
+    void connect_stderr() noexcept;
+
+    void redirect_stdout() noexcept;
+    void connect_stdout() noexcept;
+
+    void clear() noexcept;
 
     void stop_tui_mode();
     void start_tui_mode();
@@ -41,36 +41,39 @@ namespace Terminal {
 
     std::pair<int, int> get_size();
 
-    struct RGB {
-        uint8_t r;
-        uint8_t g;
-        uint8_t b;
-    };
+    // fast low-level output
+    inline void write_str(std::string_view str) noexcept;
+    inline void write_char(const char ch) noexcept;
+    // fast low-level output
 
-    template <RGB color>
-    void out() {
-        reset_attributes();
-        flush();
-    }
-    template <RGB color, typename T, typename... Args>
-    auto out(T first, Args... data) {
-        set_fg_color(color.r, color.g, color.b);
-        std::cout << first; // cur in recursion
-        flush();
+    // slow high-level output
 
-        out<color>(data...);
-    }
+    using DefaultAttrT = enum class DefaultAttr_E_ : char {};
+    static constexpr auto DefaultAttr = DefaultAttrT{};
+
     static void out() {
-        reset_attributes();
         flush();
     }
-    template <typename T, typename... Args>
-    auto out(T first, Args... data) {
-        std::cout << first; // cur in recursion
-
-        out(data...);
+    static void out(DefaultAttr_E_) {
+        reset_attributes();
     }
-    struct Cursor {
+    static void out(RGB_t color) {
+        set_fg_color(get<0>(color), get<1>(color), get<2>(color));
+    }
+    template <typename T>
+    void out(T cur) {
+        std::cout << cur;
+        flush();
+    }
+
+    template <typename T, typename... Args>
+    void out(T cur, Args... arguments) {
+        out(cur);
+        out(arguments...);
+    }
+    // slow high-level output
+
+    struct Cursor final {
 
         static Cursor& get_singleton();
 
@@ -89,7 +92,5 @@ namespace Terminal {
       private:
         std::optional<std::pair<int, int>> pos_;
     };
-
-    static auto& cursor = Cursor::get_singleton();
 
 } // namespace Terminal

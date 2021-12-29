@@ -24,7 +24,7 @@ void StreamingSource::play(const AVRational audio_ratio) {
 
     alSourcePlay(al_source_);
 
-    const auto&& play_duration_sec = std::chrono::duration<long double>(
+    const auto play_duration_sec = std::chrono::duration<long double>(
         (buffer_list_.back().get_time_stamp() - buffer_list_.front().get_time_stamp()) *
         audio_ratio.num / (long double)audio_ratio.den);
 
