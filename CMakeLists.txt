@@ -1,7 +1,7 @@
 # basic configuration :
 set(Label Solaris)
 set(Standard 20)
-set(Link_libs ffmpeg openal -lpthread)
+set(Link_libs ffmpeg openal tbb -lpthread)
 
 set(DEFAULT_ADDITIONAL_DEBUG_OPTIONS -O0 -Wall -Wextra -Weffc++ -pedantic )
 
@@ -14,6 +14,7 @@ project(${Label})
 
 add_subdirectory(lib/openal)
 add_subdirectory(lib/ffmpeg)
+add_subdirectory(lib/tbb)
 
 
 set(CMAKE_C_STANDARD 17)

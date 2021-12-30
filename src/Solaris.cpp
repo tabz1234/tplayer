@@ -14,7 +14,10 @@
 
 #include "ffmpeg/MediaLoader.hpp"
 #include "ffmpeg/convert_audio_buffer.hpp"
+#include "ffmpeg/scale_video_buffer.hpp"
 #include "ffmpeg/shrink_audio_size_to_content.hpp"
+
+#include "draw_frame_to_terminal.hpp"
 
 using namespace std::chrono_literals;
 using namespace std::string_literals;
@@ -74,9 +77,6 @@ void Solaris::run() {
         throw std::runtime_error("sigint");
     });
 
-    Terminal::redirect_stdout();
-    Terminal::redirect_stderr();
-
     Terminal::flush();
 
     OpenAl::Device::get_singleton();
@@ -84,17 +84,30 @@ void Solaris::run() {
 
     bool exit = false;
     while (!exit) {
-        for (int i = 0; i < 2000; i++) {
+        for (int i = 0; i < 200; i++) {
 
             if (audio_loader->decode_next_packet() == false) {
                 exit = true;
             }
+            if (video_loader->decode_next_packet() == false) {
+                exit = true;
+            }
         }
         auto audio_buffer = audio_loader->pop_buffer();
+        auto video_buffer = video_loader->pop_buffer();
 
         FFmpeg::convert_audio_buffer_format(audio_buffer.begin(),
                                             audio_buffer.end(),
                                             AV_SAMPLE_FMT_FLT);
+
+#if 0
+        FFmpeg::scale_video_buffer(video_buffer.begin(),
+                                   video_buffer.end(),
+                                   Terminal::get_size().ws_col,
+                                   Terminal::get_size().ws_row);
+#endif
+
+        draw_frame_to_terminal(std::move(*video_buffer.begin()), {1, 1});
 
         for (auto& elem : audio_buffer) {
             FFmpeg::shrink_audio_size_to_content(elem.ptr());

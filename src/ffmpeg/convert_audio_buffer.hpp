@@ -11,7 +11,7 @@ extern "C" {
 
 namespace FFmpeg {
 
-    auto convert_audio_buffer_format(std::list<Frame<MediaType::audio>>::iterator beg,
+    void convert_audio_buffer_format(std::list<Frame<MediaType::audio>>::iterator beg,
                                      std::list<Frame<MediaType::audio>>::iterator end,
-                                     const AVSampleFormat new_format) -> void;
+                                     const AVSampleFormat new_format);
 }

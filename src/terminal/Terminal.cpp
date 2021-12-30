@@ -19,7 +19,9 @@ namespace {
     bool stdout_state = true;
     bool stderr_state = true;
 
-    std::optional<std::pair<int, int>> size_;
+    std::optional<struct winsize> size_;
+
+    std::optional<std::pair<int, int>> pos_;
 
     struct termios orig_termios_;
     struct termios cur_termios_;
@@ -56,15 +58,11 @@ namespace {
 
 } // namespace
 
-namespace Terminal {
-    static auto& cursor = Cursor::get_singleton();
-}
-
-inline void Terminal::write_str(std::string_view str) noexcept {
+void Terminal::write_str(std::string_view str) noexcept {
     write(STDOUT_FILENO, str.data(), str.size());
 }
 
-inline void Terminal::write_char(const char ch) noexcept {
+void Terminal::write_char(const char ch) noexcept {
     write(STDOUT_FILENO, &ch, 1);
 }
 
@@ -126,7 +124,9 @@ void Terminal::update_size() {
     } // one cant control when sigwinch raises so check is not consumer
       // responsibility
 
-    const auto c_api_ret = ioctl(STDOUT_FILENO, TIOCGWINSZ, &size_);
+    size_.emplace();
+
+    const auto c_api_ret = ioctl(STDOUT_FILENO, TIOCGWINSZ, &size_.value());
     check(c_api_ret != -1, "ioctl failed");
 }
 void Terminal::start_tui_mode() {
@@ -134,10 +134,10 @@ void Terminal::start_tui_mode() {
     atach_screen();
 
     update_size();
-    cursor.move(1, 1);
+    Cursor::move(1, 1);
 
     start_raw_mode();
-    cursor.hide();
+    Cursor::hide();
 }
 void Terminal::reset_attributes() noexcept {
     Terminal::write_str("\033[0m");
@@ -146,11 +146,11 @@ void Terminal::stop_tui_mode() {
 
     detach_screen();
 
-    cursor.show();
+    Cursor::show();
     stop_raw_mode();
 }
 
-std::pair<int, int> Terminal::get_size() {
+struct winsize Terminal::get_size() {
     return size_.value();
 }
 
@@ -177,33 +177,29 @@ void Terminal::Cursor::show() noexcept {
 }
 
 void Terminal::Cursor::shift_left() noexcept {
-    auto& [x, y] = Terminal::cursor.pos_.value();
+    auto& [x, y] = pos_.value();
     --x;
 
     write_str("\033[1D");
 }
 void Terminal::Cursor::shift_right() noexcept {
-    auto& [x, y] = Terminal::cursor.pos_.value();
+    auto& [x, y] = pos_.value();
     ++x;
 
     write_str("\033[1C");
 }
 void Terminal::Cursor::shift_down() noexcept {
-    auto& [x, y] = Terminal::cursor.pos_.value();
+    auto& [x, y] = pos_.value();
     --y;
 
     write_str("\033[1B");
 }
 void Terminal::Cursor::shift_up() noexcept {
-    auto& [x, y] = Terminal::cursor.pos_.value();
+    auto& [x, y] = pos_.value();
     ++y;
 
     write_str("\033[1A");
 }
-std::pair<int, int> Terminal::Cursor::get_pos() const noexcept {
+std::pair<int, int> Terminal::Cursor::get_pos() noexcept {
     return pos_.value();
-}
-Terminal::Cursor& Terminal::Cursor::get_singleton() {
-    static Cursor singleton_instance;
-    return singleton_instance;
 }

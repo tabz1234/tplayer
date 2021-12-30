@@ -39,11 +39,11 @@ namespace Terminal {
 
     void update_size();
 
-    std::pair<int, int> get_size();
+    struct winsize get_size();
 
     // fast low-level output
-    inline void write_str(std::string_view str) noexcept;
-    inline void write_char(const char ch) noexcept;
+    void write_str(std::string_view str) noexcept;
+    void write_char(const char ch) noexcept;
     // fast low-level output
 
     // slow high-level output
@@ -73,9 +73,7 @@ namespace Terminal {
     }
     // slow high-level output
 
-    struct Cursor final {
-
-        static Cursor& get_singleton();
+    namespace Cursor {
 
         void move(const int x, const int y) noexcept;
 
@@ -87,10 +85,7 @@ namespace Terminal {
         void shift_up() noexcept;
         void shift_down() noexcept;
 
-        std::pair<int, int> get_pos() const noexcept;
-
-      private:
-        std::optional<std::pair<int, int>> pos_;
-    };
+        std::pair<int, int> get_pos() noexcept;
+    }; // namespace Cursor
 
 } // namespace Terminal
