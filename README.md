@@ -1,4 +1,4 @@
-# Solaris
+# tplayer
 Linux terminal video player 
 
 [CLOSED]
