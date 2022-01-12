@@ -6,7 +6,7 @@ extern "C" {
 
 #include <cstdint>
 
-#include "ffmpeg/Frame.hpp"
+#include "../ffmpeg/Frame.hpp"
 
 namespace OpenAl {
 

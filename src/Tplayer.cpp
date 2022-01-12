@@ -1,4 +1,4 @@
-#include "Solaris.hpp"
+#include "Tplayer.hpp"
 
 #include <chrono>
 #include <csignal>
@@ -22,7 +22,7 @@
 using namespace std::chrono_literals;
 using namespace std::string_literals;
 
-Solaris::Solaris(const int argc, const char** const argv) {
+Tplayer::Tplayer(const int argc, const char** const argv) {
 
     //@TODO argument parsing
     if (argc == 1) {
@@ -36,7 +36,7 @@ Solaris::Solaris(const int argc, const char** const argv) {
 
     filepath_ = std::move(filepath);
 }
-void Solaris::run() {
+void Tplayer::run() {
 
     std::optional<FFmpeg::MediaLoader<FFmpeg::MediaType::audio>> audio_loader;
     try {
@@ -100,23 +100,30 @@ void Solaris::run() {
                                             audio_buffer.end(),
                                             AV_SAMPLE_FMT_FLT);
 
-#if 0
+#if 1
         FFmpeg::scale_video_buffer(video_buffer.begin(),
                                    video_buffer.end(),
-                                   Terminal::get_size().ws_col,
-                                   Terminal::get_size().ws_row);
+                                   video_buffer.begin()->ptr()->width * 0.5,
+                                   video_buffer.begin()->ptr()->height * 0.5);
 #endif
 
-        draw_frame_to_terminal(std::move(*video_buffer.begin()), {1, 1});
+        std::thread th([&]() {
+            for (auto& frame : video_buffer) {
+                draw_frame_to_terminal(std::move(frame), {1, 1});
+            }
+        });
 
         for (auto& elem : audio_buffer) {
             FFmpeg::shrink_audio_size_to_content(elem.ptr());
             sound_source.add_buffer(OpenAl::Buffer(std::move(elem)));
         }
+#if 1
         sound_source.play(audio_loader->get_time_ratio());
+#endif
+        th.join();
     }
 }
-void Solaris::print_msg_prefix() {
+void Tplayer::print_msg_prefix() {
 
     Terminal::out("\n",
                   RGB_t{0, 200, 200},
@@ -128,7 +135,7 @@ void Solaris::print_msg_prefix() {
                   Terminal::DefaultAttr,
                   "~~>");
 }
-Solaris::~Solaris() {
+Tplayer::~Tplayer() {
     Terminal::connect_stdout();
     Terminal::stop_tui_mode();
 }

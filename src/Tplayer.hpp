@@ -2,14 +2,14 @@
 
 #include <filesystem>
 
-struct Solaris final {
+struct Tplayer final {
 
-    Solaris(const int argc, const char** const argv);
+    Tplayer(const int argc, const char** const argv);
 
     void run();
     static void print_msg_prefix();
 
-    ~Solaris();
+    ~Tplayer();
 
   public:
     std::filesystem::path filepath_;

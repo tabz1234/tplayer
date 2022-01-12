@@ -10,7 +10,7 @@ extern "C" {
 #include <csignal>
 #include <span>
 
-#include "check.hpp"
+#include "../check.hpp"
 
 using namespace std::string_literals;
 

@@ -8,7 +8,7 @@ extern "C" {
 #include <utility>
 
 #include "../check.hpp"
-#include "ffmpeg/MediaType.hpp"
+#include "MediaType.hpp"
 
 namespace FFmpeg {
 

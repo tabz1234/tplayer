@@ -1,4 +1,4 @@
-#include "openal/Buffer.hpp"
+#include "Buffer.hpp"
 
 #include <optional>
 #include <utility>

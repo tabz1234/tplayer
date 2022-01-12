@@ -6,8 +6,8 @@ extern "C" {
 
 #include <list>
 
-#include "ffmpeg/Frame.hpp"
-#include "openal/Buffer.hpp"
+#include "../ffmpeg/Frame.hpp"
+#include "Buffer.hpp"
 
 namespace OpenAl {
 
