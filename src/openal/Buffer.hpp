@@ -15,6 +15,8 @@ namespace OpenAl {
         Buffer(FFmpeg::Frame<FFmpeg::MediaType::audio>&& audio_frame);
 
         ALuint get_al_buffer() noexcept;
+
+        const ALuint* get_al_buffer_ptr() const noexcept;
         ALuint* get_al_buffer_ptr() noexcept;
 
         int64_t get_time_stamp() const noexcept;

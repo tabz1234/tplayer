@@ -13,7 +13,7 @@ namespace OpenAl {
         Device();
         ~Device();
 
-        ALCdevice* alc_device_;
+        ALCdevice* alc_device_; // DO NOT CHANGE ORDER OF MEMBERS
         ALCcontext* alc_ctx_;
     };
 

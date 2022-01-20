@@ -19,11 +19,13 @@ namespace FFmpeg {
             av_frame_ = existing_frame;
         }
 
-        Frame() {
-            av_frame_ = av_frame_alloc();
+        Frame() : av_frame_{av_frame_alloc()} {
             check(av_frame_ != nullptr, " av_frame_alloc failed");
         }
 
+        const AVFrame* ptr() const noexcept {
+            return av_frame_;
+        }
         AVFrame* ptr() noexcept {
             return av_frame_;
         }
@@ -40,7 +42,7 @@ namespace FFmpeg {
         }
 
       private:
-        AVFrame* av_frame_ = nullptr;
+        AVFrame* av_frame_;
 
       public:
         Frame(const Frame&) = delete;

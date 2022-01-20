@@ -5,13 +5,14 @@ extern "C" {
 #include <libavutil/avutil.h>
 }
 
-#include <list>
+#include <vector>
 
 #include "Frame.hpp"
 
 namespace FFmpeg {
 
-    void convert_audio_buffer_format(std::list<Frame<MediaType::audio>>::iterator beg,
-                                     std::list<Frame<MediaType::audio>>::iterator end,
-                                     const AVSampleFormat new_format);
+    std::vector<Frame<MediaType::audio>>
+    convert_audio_buffer_format(const std::vector<Frame<MediaType::audio>>::const_iterator begin,
+                                const std::vector<Frame<MediaType::audio>>::const_iterator end,
+                                const AVSampleFormat new_format);
 }

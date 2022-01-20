@@ -54,12 +54,10 @@ endif()
 add_executable(${ProjectName}
 	./src/main.cpp
 	./src/Tplayer.cpp
-	./src/draw_frame_to_terminal.cpp
+	./src/frame_to_esqmap.cpp
 
 	./src/terminal/Terminal.cpp
 
-	./src/ffmpeg/InputHandle.cpp
-	./src/ffmpeg/scale_video_buffer.cpp
 	./src/ffmpeg/convert_audio_buffer.cpp
 	./src/ffmpeg/shrink_audio_size_to_content.cpp
 

@@ -38,10 +38,8 @@ int64_t Buffer::get_time_stamp() const noexcept {
     return time_stamp_;
 }
 
-Buffer::Buffer(Buffer&& rval) noexcept {
-
-    al_buffer_ = std::exchange(rval.al_buffer_, 0);
-    time_stamp_ = rval.time_stamp_;
+Buffer::Buffer(Buffer&& rval) noexcept
+    : al_buffer_{std::exchange(rval.al_buffer_, 0)}, time_stamp_{rval.time_stamp_} {
 }
 
 Buffer& Buffer::operator=(Buffer&& rval) noexcept {
@@ -55,6 +53,9 @@ ALuint Buffer::get_al_buffer() noexcept {
     return al_buffer_;
 }
 ALuint* Buffer::get_al_buffer_ptr() noexcept {
+    return &al_buffer_;
+}
+const ALuint* Buffer::get_al_buffer_ptr() const noexcept {
     return &al_buffer_;
 }
 Buffer::~Buffer() {

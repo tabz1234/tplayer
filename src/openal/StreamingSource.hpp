@@ -4,7 +4,7 @@ extern "C" {
 #include <AL/al.h>
 }
 
-#include <list>
+#include <vector>
 
 #include "../ffmpeg/Frame.hpp"
 #include "Buffer.hpp"
@@ -24,7 +24,7 @@ namespace OpenAl {
       private:
         ALuint al_source_;
 
-        std::list<OpenAl::Buffer> buffer_list_;
+        std::vector<OpenAl::Buffer> queued_buffers_;
 
       private:
         static constexpr float pitch_ = 1.f;

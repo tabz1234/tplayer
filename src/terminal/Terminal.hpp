@@ -26,11 +26,11 @@ namespace Terminal {
 
     void flush() noexcept;
 
-    void redirect_stderr() noexcept;
-    void connect_stderr() noexcept;
+    void suspend_stderr() noexcept;
+    void enable_stderr() noexcept;
 
-    void redirect_stdout() noexcept;
-    void connect_stdout() noexcept;
+    void suspend_stdout() noexcept;
+    void enable_stdout() noexcept;
 
     void clear() noexcept;
 
@@ -50,10 +50,8 @@ namespace Terminal {
 
     using DefaultAttrT = enum class DefaultAttr_E_ : char {};
     static constexpr auto DefaultAttr = DefaultAttrT{};
+    static constexpr auto newl = '\n';
 
-    static void out() {
-        flush();
-    }
     static void out(DefaultAttr_E_) {
         reset_attributes();
     }
@@ -65,12 +63,15 @@ namespace Terminal {
         std::cout << cur;
         flush();
     }
-
     template <typename T, typename... Args>
     void out(T cur, Args... arguments) {
+
         out(cur);
         out(arguments...);
+
+        reset_attributes();
     }
+
     // slow high-level output
 
     namespace Cursor {

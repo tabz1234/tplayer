@@ -11,15 +11,16 @@ extern "C" {
 using namespace OpenAl;
 
 Device& Device::get_singleton() {
+
     static Device singleton_instance;
     return singleton_instance;
 }
 
-Device::Device() {
-    alc_device_ = alcOpenDevice(nullptr);
+Device::Device()
+    : alc_device_{alcOpenDevice(nullptr)}, alc_ctx_{alcCreateContext(alc_device_, nullptr)} {
+
     check(alc_device_ != nullptr, "alcOpenDevice failed");
 
-    alc_ctx_ = alcCreateContext(alc_device_, nullptr);
     check(alc_ctx_ != nullptr, "alcCreateContext failed");
 
     const auto c_api_ret = alcMakeContextCurrent(alc_ctx_);
@@ -27,6 +28,7 @@ Device::Device() {
 }
 
 Device::~Device() {
+
     auto c_api_ret = alcMakeContextCurrent(nullptr);
     check(c_api_ret != 0, "alcMakeContextCurrent failed in destructor");
 
