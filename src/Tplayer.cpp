@@ -66,21 +66,21 @@ void Tplayer::run()
                       Terminal::newl);
     };
 
-    constexpr auto PRODUCE_COUNT = 24;
     constexpr auto CONSUME_COUNT = 2;
+    constexpr auto PRODUCE_COUNT = CONSUME_COUNT * 10;
 
     std::optional<FFmpeg::MediaLoader<FFmpeg::MediaType::video>> video_loader;
-
     std::optional<std::queue<FFmpeg::Frame<FFmpeg::MediaType::video>>> video_queue;
-    std::optional<std::condition_variable> producer_cond;
-    std::optional<std::condition_variable> consumer_cond;
-    std::optional<std::mutex> prod_cons_mutex;
+
+    std::condition_variable producer_cond;
+    std::condition_variable consumer_cond;
+    std::mutex prod_cons_mutex;
+
     std::exception_ptr eptr;
 
     try {
         video_loader.emplace(filepath_.c_str());
         video_queue.emplace();
-        prod_cons_mutex.emplace();
         Terminal::start_tui_mode();
     }
     catch (const std::exception& e) {
@@ -100,12 +100,16 @@ void Tplayer::run()
     }
 #endif
 
-    bool producer_alive = true;
+    const bool produce_video = video_loader.has_value();
+    std::atomic<bool> producer_alive = true;
+
     std::thread producer_thread([&] {
         try {
-            while (producer_alive) {
-                std::array<FFmpeg::Frame<FFmpeg::MediaType::video>, PRODUCE_COUNT> raw_frames_vec;
+            while (producer_alive.load()) {
+                std::vector<FFmpeg::Frame<FFmpeg::MediaType::video>> raw_frames_vec;
+                raw_frames_vec.reserve(PRODUCE_COUNT);
 
+                auto raw_frames_vec_it = raw_frames_vec.cbegin();
                 for (int i = 0; i < PRODUCE_COUNT; ++i) {
 
                     auto decoder_output = video_loader->decode_next_packet();
@@ -115,11 +119,11 @@ void Tplayer::run()
                     }
 
                     for (auto&& raw_frame : decoder_output.value()) {
-                        raw_frames_vec[i] = std::move(raw_frame);
+                        raw_frames_vec_it =
+                            raw_frames_vec.insert(raw_frames_vec_it, std::move(raw_frame));
                     }
                 }
-
-                if (!producer_alive) break;
+                if (raw_frames_vec.size() < 1) break;
 
                 Terminal::update_size();
                 auto rescaled_frames =
@@ -128,54 +132,73 @@ void Tplayer::run()
                                                                  Terminal::get_size().ws_col,
                                                                  Terminal::get_size().ws_row);
                 {
-                    std::unique_lock<std::mutex> lk{prod_cons_mutex.value()};
+                    std::unique_lock<std::mutex> lk{prod_cons_mutex};
 
-                    producer_cond->wait(lk, [&] {
+                    producer_cond.wait(lk, [&] {
                         return video_queue->size() < PRODUCE_COUNT;
                     });
                     for (auto&& rescaled : rescaled_frames) {
                         video_queue.value().emplace(std::move(rescaled));
                     }
-                }
-                consumer_cond->notify_one();
+                } // mutex
+                consumer_cond.notify_one();
             }
         }
         catch (...) {
             eptr = std::current_exception();
         }
 
-        consumer_cond->notify_all();
+        consumer_cond.notify_all();
     });
-    producer_thread.detach();
 
+    const auto play_start_time = std::chrono::high_resolution_clock::now();
+    const auto video_time_ratio = video_loader->get_time_ratio();
     bool exit = false;
-    bool done = false;
-    do {
-        std::array<FFmpeg::Frame<FFmpeg::MediaType::video>, CONSUME_COUNT> frames_arr;
-        {
-            std::unique_lock<std::mutex> lk{prod_cons_mutex.value()};
+    while (!exit) {
+        std::vector<FFmpeg::Frame<FFmpeg::MediaType::video>> frames_vec;
+        frames_vec.reserve(CONSUME_COUNT);
 
-            consumer_cond->wait(lk, [&] {
-                return video_queue->size() >= CONSUME_COUNT;
+        {
+            std::unique_lock<std::mutex> lk{prod_cons_mutex};
+
+            consumer_cond.wait(lk, [&] {
+                return video_queue->size() >= CONSUME_COUNT || !producer_alive.load();
             });
 
-            if (!producer_alive) break;
+            if (!producer_alive.load()) exit = true;
             if (eptr) std::rethrow_exception(eptr);
 
-            for (auto& frame : frames_arr) {
-                frame = (std::move(video_queue->front()));
+            auto frames_vec_it = frames_vec.cbegin();
+            while (video_queue->size() > 0) {
+                frames_vec_it = frames_vec.insert(frames_vec_it, std::move(video_queue->front()));
                 video_queue->pop();
             }
-        }
-        producer_cond->notify_one();
 
-        for (const auto& cur_frame : frames_arr) {
+        } // mutex
+        producer_cond.notify_one();
+
+        for (const auto& cur_frame : frames_vec) {
+
+            const auto play_offset_time =
+                std::chrono::high_resolution_clock::now() - play_start_time;
+            const long double sleep_time =
+                (cur_frame.ptr()->pts * video_time_ratio.num /
+                 static_cast<long double>(video_time_ratio.den)) -
+                std::chrono::duration<long double>(play_offset_time).count();
+
+            if (sleep_time > 0) {
+                std::this_thread::sleep_for(std::chrono::duration<long double>(sleep_time));
+            }
+
             const auto cur_esqmap = frame_to_esqmap(cur_frame.ptr());
 
             Terminal::Cursor::move(1, 1);
             write(STDOUT_FILENO, cur_esqmap.data(), cur_esqmap.size());
         }
-    } while (!exit);
+    }
+
+    producer_thread.join();
+
 #if 0
     bool exit = false;
     while (!exit) {

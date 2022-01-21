@@ -11,12 +11,13 @@ extern "C" {
 
 namespace FFmpeg {
 
-    template <typename ContainerT>
-    ContainerT scale_video_buffer(const typename ContainerT::const_iterator begin,
-                                  const typename ContainerT::const_iterator end,
-                                  const int new_width,
-                                  const int new_height,
-                                  const enum AVPixelFormat new_format = AV_PIX_FMT_RGB0)
+    template <typename ContainerT> //@TODO template template parameter
+    std::vector<Frame<MediaType::video>>
+    scale_video_buffer(const typename ContainerT::const_iterator begin,
+                       const typename ContainerT::const_iterator end,
+                       const int new_width,
+                       const int new_height,
+                       const enum AVPixelFormat new_format = AV_PIX_FMT_RGB0)
     {
 
         const auto sws_ctx = sws_getContext(begin->ptr()->width,
@@ -32,29 +33,29 @@ namespace FFmpeg {
 
         check(sws_ctx != nullptr, "sws_getContext failed");
 
-        ContainerT out_vec;
-        auto out_it = out_vec.begin();
+        std::vector<Frame<MediaType::video>> out_vec;
 
-        std::for_each(begin, end, [&](const auto& it) { //@TODO try paralel
+        std::for_each(begin, end, [&](const auto& input_frame) { //@TODO try paralel
             Frame<MediaType::video> converted_frame;
 
             converted_frame.ptr()->width = new_width;
             converted_frame.ptr()->height = new_height;
             converted_frame.ptr()->format = new_format;
 
+            av_frame_copy_props(converted_frame.ptr(), input_frame.ptr());
+
             const auto c_api_ret = av_frame_get_buffer(converted_frame.ptr(), 0);
             check(c_api_ret == 0, "av_frame_get_buffer failed");
 
             sws_scale(sws_ctx,
-                      it.ptr()->data,
-                      it.ptr()->linesize,
+                      input_frame.ptr()->data,
+                      input_frame.ptr()->linesize,
                       0,
-                      it.ptr()->height,
+                      input_frame.ptr()->height,
                       converted_frame.ptr()->data,
                       converted_frame.ptr()->linesize);
 
-            *out_it = std::move(converted_frame);
-            ++out_it;
+            out_vec.emplace_back(std::move(converted_frame));
         });
 
         sws_freeContext(sws_ctx);

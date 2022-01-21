@@ -32,7 +32,8 @@ namespace FFmpeg {
         constexpr static auto type_cstr = MediaType_to_sv(Type_).data();
 
       public:
-        MediaLoader(const std::string_view filepath) {
+        MediaLoader(const std::string_view filepath)
+        {
 
             av_format_ctx_ = avformat_alloc_context();
             check(av_format_ctx_ != nullptr, type_cstr + " loader avformat_alloc_context failed"s);
@@ -79,25 +80,21 @@ namespace FFmpeg {
             check(av_packet_ != nullptr, type_cstr + " loader av_frame_alloc failed"s);
         }
 
-        auto get_time_ratio() const noexcept {
+        auto get_time_ratio() const noexcept
+        {
             return av_time_base_;
         }
 
-        std::optional<std::vector<Frame<Type_>>> decode_next_packet() {
+        std::optional<std::vector<Frame<Type_>>> decode_next_packet()
+        {
 
-            const std::unique_ptr<AVPacket, void (*)(AVPacket*)> av_packet_uptr{
-                av_packet_,
-                [](AVPacket* raw_ptr) {
-                    av_packet_unref(raw_ptr);
-                }};
+            while (av_read_frame(av_format_ctx_, av_packet_) == 0) {
 
-            while (av_read_frame(av_format_ctx_, av_packet_uptr.get()) == 0) {
-
-                if (av_packet_uptr.get()->stream_index == stream_index_) {
+                if (av_packet_->stream_index == stream_index_) {
 
                     std::vector<Frame<Type_>> frame_buffer_;
 
-                    int c_api_ret = avcodec_send_packet(av_codec_ctx_, av_packet_uptr.get());
+                    int c_api_ret = avcodec_send_packet(av_codec_ctx_, av_packet_);
                     check(c_api_ret == 0, type_cstr + " loader avcodec_send_packet failed"s);
 
                     do {
@@ -112,14 +109,18 @@ namespace FFmpeg {
 
                     } while (1);
 
+                    av_packet_unref(av_packet_);
                     return frame_buffer_;
                 }
+                av_packet_unref(av_packet_);
             }
 
+            av_packet_unref(av_packet_);
             return std::nullopt;
         }
 
-        ~MediaLoader() {
+        ~MediaLoader()
+        {
 
             avformat_close_input(&av_format_ctx_);
             avformat_free_context(av_format_ctx_);

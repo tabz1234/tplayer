@@ -52,19 +52,23 @@ namespace Terminal {
     static constexpr auto DefaultAttr = DefaultAttrT{};
     static constexpr auto newl = '\n';
 
-    static void out(DefaultAttr_E_) {
+    static void out(DefaultAttr_E_)
+    {
         reset_attributes();
     }
-    static void out(RGB_t color) {
+    static void out(RGB_t color)
+    {
         set_fg_color(get<0>(color), get<1>(color), get<2>(color));
     }
     template <typename T>
-    void out(T cur) {
+    void out(T cur)
+    {
         std::cout << cur;
         flush();
     }
     template <typename T, typename... Args>
-    void out(T cur, Args... arguments) {
+    void out(T cur, Args... arguments)
+    {
 
         out(cur);
         out(arguments...);
@@ -85,8 +89,6 @@ namespace Terminal {
         void shift_right() noexcept;
         void shift_up() noexcept;
         void shift_down() noexcept;
-
-        std::pair<int, int> get_pos() noexcept;
     }; // namespace Cursor
 
 } // namespace Terminal
