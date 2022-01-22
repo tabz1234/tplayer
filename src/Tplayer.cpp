@@ -1,12 +1,10 @@
 #include "Tplayer.hpp"
 
-#include <array>
 #include <chrono>
 #include <csignal>
 #include <cstdlib>
 #include <filesystem>
 #include <future>
-#include <iostream>
 #include <queue>
 #include <stdexcept>
 #include <thread>
@@ -109,7 +107,6 @@ void Tplayer::run()
                 std::vector<FFmpeg::Frame<FFmpeg::MediaType::video>> raw_frames_vec;
                 raw_frames_vec.reserve(PRODUCE_COUNT);
 
-                auto raw_frames_vec_it = raw_frames_vec.cbegin();
                 for (int i = 0; i < PRODUCE_COUNT; ++i) {
 
                     auto decoder_output = video_loader->decode_next_packet();
@@ -119,11 +116,10 @@ void Tplayer::run()
                     }
 
                     for (auto&& raw_frame : decoder_output.value()) {
-                        raw_frames_vec_it =
-                            raw_frames_vec.insert(raw_frames_vec_it, std::move(raw_frame));
+                        raw_frames_vec.emplace_back(std::move(raw_frame));
                     }
                 }
-                if (raw_frames_vec.size() < 1) break;
+                if (raw_frames_vec.size() < 1) continue;
 
                 Terminal::update_size();
                 auto rescaled_frames =
@@ -153,6 +149,7 @@ void Tplayer::run()
 
     const auto play_start_time = std::chrono::high_resolution_clock::now();
     const auto video_time_ratio = video_loader->get_time_ratio();
+
     bool exit = false;
     while (!exit) {
         std::vector<FFmpeg::Frame<FFmpeg::MediaType::video>> frames_vec;
@@ -168,9 +165,8 @@ void Tplayer::run()
             if (!producer_alive.load()) exit = true;
             if (eptr) std::rethrow_exception(eptr);
 
-            auto frames_vec_it = frames_vec.cbegin();
             while (video_queue->size() > 0) {
-                frames_vec_it = frames_vec.insert(frames_vec_it, std::move(video_queue->front()));
+                frames_vec.emplace_back(std::move(video_queue->front()));
                 video_queue->pop();
             }
 
