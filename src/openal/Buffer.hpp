@@ -14,12 +14,12 @@ namespace OpenAl {
 
         Buffer(FFmpeg::Frame<FFmpeg::MediaType::audio>&& audio_frame);
 
-        ALuint get_al_buffer() noexcept;
+        ALuint get_al_buffer_id() const noexcept;
 
         const ALuint* get_al_buffer_ptr() const noexcept;
         ALuint* get_al_buffer_ptr() noexcept;
 
-        int64_t get_time_stamp() const noexcept;
+        int64_t get_duration() const noexcept;
 
         Buffer(Buffer&&) noexcept;
         Buffer& operator=(Buffer&&) noexcept;
@@ -28,7 +28,7 @@ namespace OpenAl {
 
       private:
         ALuint al_buffer_;
-        int64_t time_stamp_;
+        int64_t duration_;
 
       public:
         Buffer(const Buffer&) = delete;

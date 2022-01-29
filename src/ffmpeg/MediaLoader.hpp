@@ -58,7 +58,8 @@ namespace FFmpeg {
                     stream_index_ = i;
                     av_time_base_ = av_format_ctx_->streams[i]->time_base;
 
-                    av_codec = avcodec_find_decoder(av_codec_params->codec_id);
+                    av_codec =
+                        const_cast<AVCodec*>(avcodec_find_decoder(av_codec_params->codec_id));
                     check(av_codec != nullptr,
                           type_cstr + " loader avcodec_find_decoder failed, codec id :"s +
                               std::to_string(av_codec_params->codec_id));

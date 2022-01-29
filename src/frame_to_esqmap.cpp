@@ -1,23 +1,26 @@
 #include "frame_to_esqmap.hpp"
 
-#include "ptr_view.hpp"
 #include "terminal/Terminal.hpp"
 
 #include <vector>
 
 template <std::integral IntT, std::integral auto buff_size_>
 std::string_view static integer_to_chars(const IntT int_val,
-                                         std::array<char, buff_size_>& buff_view) {
+                                         std::array<char, buff_size_>& buff_view)
+{
 
     const auto [ptr, ec] =
         std::to_chars(buff_view.data(), buff_view.data() + buff_view.size(), int_val);
 
     return {buff_view.data(), ptr};
 }
-std::string frame_to_esqmap(const ptr_view<const AVFrame> frame) {
+std::string frame_to_esqmap(const AVFrame* const frame)
+{
 
     std::string esqmap;
-    esqmap.reserve(static_cast<long>(frame->linesize[0]) * frame->height);
+    esqmap.reserve(static_cast<long>(frame->linesize[0]) * (frame->height + 1));
+
+    esqmap += "\033[0;0H";
 
     constexpr auto color_buff_size = 4;
     std::array<char, color_buff_size> color_buff;

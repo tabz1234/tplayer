@@ -11,7 +11,11 @@ struct Tplayer final {
 
     ~Tplayer();
 
-  public:
+  private:
+    void parse_cmd_arguments(const int argc, const char** const argv);
+
+  private:
     std::filesystem::path filepath_;
+
     bool loop_ = false;
 };

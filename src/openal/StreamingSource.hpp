@@ -4,27 +4,30 @@ extern "C" {
 #include <AL/al.h>
 }
 
-#include <vector>
+#include <chrono>
 
 #include "../ffmpeg/Frame.hpp"
-#include "Buffer.hpp"
 
 namespace OpenAl {
 
     struct StreamingSource final {
 
-        StreamingSource();
+        StreamingSource() noexcept;
 
-        void add_buffer(OpenAl::Buffer&&);
+        void queue_buffer(const ALuint buffer_id) noexcept;
+        void unqueue_buffer(ALuint buffer_id) noexcept;
 
-        void play(const AVRational audio_ratio);
+        ALint get_processed_buffers_count() const noexcept;
+
+        void play() noexcept;
+        void pause() noexcept;
+
+        ALenum get_state() const noexcept;
 
         ~StreamingSource();
 
       private:
         ALuint al_source_;
-
-        std::vector<OpenAl::Buffer> queued_buffers_;
 
       private:
         static constexpr float pitch_ = 1.f;

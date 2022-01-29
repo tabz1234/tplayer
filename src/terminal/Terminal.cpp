@@ -151,14 +151,17 @@ void Terminal::start_tui_mode()
 
     start_raw_mode();
     Cursor::hide();
+
+    Terminal::flush();
 }
 
 void Terminal::stop_tui_mode()
 {
 
+    detach_screen();
+
     Cursor::show();
     stop_raw_mode();
-    detach_screen();
 
     Terminal::flush();
 }

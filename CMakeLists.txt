@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 
 set(ProjectName tplayer)
 
-project(${ProjectName} CXX)
+project(${ProjectName} LANGUAGES CXX)
 include(cmake/StandardProjectSettings.cmake)
 include(cmake/PreventInSourceBuilds.cmake)
 
