@@ -11,7 +11,7 @@ but all of wide-used supported
 Build dependencies
 ------------------
 - git
-- gcc or clang with c++20 support
+- gcc or clang | with c++20 support
 - cmake
 - findpkg
 - OpenAL
