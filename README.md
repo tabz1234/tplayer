@@ -12,7 +12,7 @@ Build dependencies
 ------------------
 - git
 - gcc or clang | with c++20 support
-- cmake
+- cmake (3.18 or higher)
 - findpkg
 - OpenAL
 - FFmpeg
