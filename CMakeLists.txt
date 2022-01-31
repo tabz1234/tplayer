@@ -5,7 +5,6 @@ set(ProjectName tplayer)
 
 project(${ProjectName} LANGUAGES CXX)
 include(cmake/StandardProjectSettings.cmake)
-include(cmake/PreventInSourceBuilds.cmake)
 
 add_library(project_options INTERFACE)
 target_compile_features(project_options INTERFACE cxx_std_20)
@@ -33,18 +32,20 @@ enable_sanitizers(project_options)
 
 include(cmake/StaticAnalyzers.cmake)
 
-option(ENABLE_PCH "Enable Precompiled Headers" OFF)
+option(ENABLE_PCH "Enable Precompiled Headers" ON)
 if(ENABLE_PCH)
   target_precompile_headers(
     project_options
     INTERFACE
     <vector>
     <string>
+    <chrono>
+    <queue>
     <iostream>
+    <cstdlib>
+    <thread>
     <type_traits>
     <map>
-    <list>
-    <forward_list>
     <optional>
     <stdexcept>
     <memory>
