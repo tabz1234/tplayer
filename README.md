@@ -20,7 +20,7 @@ Build instructions
 ------------------
 
     $ git clone https://github.com/tabz1234/tplayer.git
-    $ cd tplayer/
-    $ cmake .
-    $ cmake --build .
+    && cd tplayer/
+    && cmake .
+    && cmake --build .
     
