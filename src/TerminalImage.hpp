@@ -5,5 +5,5 @@
 struct TerminalImage {
     std::string esqmap;
     int64_t duration;
-    int64_t dts;
+    int64_t pts;
 };

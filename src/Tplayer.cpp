@@ -59,10 +59,6 @@ Tplayer::Tplayer(const int argc, const char** const argv)
     audio_play_done_ = has_audio_ ? false : true;
 
     Terminal::start_tui_mode();
-    std::atexit([] {
-        Terminal::enable_stdout();
-        Terminal::stop_tui_mode();
-    });
 
     std::signal(SIGINT, [](int) {
     });
@@ -84,7 +80,7 @@ void Tplayer::run()
         if (has_video_ && video_consumer_done_) {
             exit_main = true;
         }
-        else if (has_audio_ && audio_play_done_) {
+        if (has_audio_ && audio_play_done_) {
             exit_main = true;
         }
 
@@ -92,11 +88,12 @@ void Tplayer::run()
         read(STDIN_FILENO, &ch, 1);
 
         if (ch == 'q') {
+            Terminal::stop_tui_mode();
             std::exit(EXIT_SUCCESS);
         }
 
         if (!exit_main) {
-            std::this_thread::sleep_for(50ms);
+            std::this_thread::sleep_for(100ms);
         }
     }
 }
@@ -165,7 +162,6 @@ std::pair<std::future<void>, std::future<void>> Tplayer::async_start_audio_loops
             std::vector<OpenAl::Buffer> al_buffer_vec;
             al_buffer_vec.reserve(AUDIO_BUFFER_SIZE_);
 
-            play_cond_.notify_one();
             { // mutex
                 std::unique_lock<std::mutex> lk{play_cleanup_mutex_};
 
@@ -178,6 +174,7 @@ std::pair<std::future<void>, std::future<void>> Tplayer::async_start_audio_loops
                     audio_queue_.pop();
                 }
             } // mutex
+            play_cond_.notify_one();
 
             std::chrono::duration<long double> duration_to_wait{0};
             for (const auto& al_buff : al_buffer_vec) {
@@ -230,7 +227,7 @@ std::pair<std::future<void>, std::future<void>> Tplayer::async_start_video_loops
                 for (const auto& rescaled_frame : rescaled_frames) {
                     final_images_vec.emplace_back(frame_to_esqmap(rescaled_frame.ptr()),
                                                   rescaled_frame.ptr()->pkt_duration,
-                                                  rescaled_frame.ptr()->pkt_dts);
+                                                  rescaled_frame.ptr()->pts);
                 }
             }
 
@@ -250,13 +247,14 @@ std::pair<std::future<void>, std::future<void>> Tplayer::async_start_video_loops
         video_consumer_cond_.notify_all();
     });
     auto consume_loop = std::async(std::launch::async, [&] {
+        Terminal::suspend_stderr(); //@TODO raii wrapper
+
         const auto play_start_time = std::chrono::high_resolution_clock::now();
         while (!video_consumer_done_) {
 
             std::vector<TerminalImage> images_vec;
             images_vec.reserve(VIDEO_BUFFER_SIZE_);
 
-            video_producer_cond_.notify_one();
             { // mutex
                 std::unique_lock<std::mutex> lk{video_prod_cons_mutex_};
 
@@ -275,25 +273,24 @@ std::pair<std::future<void>, std::future<void>> Tplayer::async_start_video_loops
                 }
 
             } // mutex
+            video_producer_cond_.notify_one();
 
             for (const auto& image : images_vec) {
 
                 const auto start_of_consuming = std::chrono::high_resolution_clock::now();
                 const long double sleep_time =
-                    (image.dts * video_time_ratio_.num /
+                    (image.pts * video_time_ratio_.num /
                      static_cast<long double>(video_time_ratio_.den)) -
                     std::chrono::duration<long double>(start_of_consuming - play_start_time)
                         .count();
 
-                Terminal::enable_stdout();
                 std::this_thread::sleep_for(std::chrono::duration<long double>(sleep_time));
 
-                const auto start_of_drawing = std::chrono::high_resolution_clock::now();
                 write(STDOUT_FILENO, image.esqmap.data(), image.esqmap.size());
-
-                Terminal::suspend_stdout();
             }
         }
+
+        Terminal::enable_stderr();
     });
 
     return {std::move(produce_loop), std::move(consume_loop)};
