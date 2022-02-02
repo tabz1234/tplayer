@@ -314,4 +314,5 @@ void Tplayer::print_msg_prefix()
 }
 Tplayer::~Tplayer()
 {
+    Terminal::stop_tui_mode();
 }
