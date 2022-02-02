@@ -284,7 +284,12 @@ std::pair<std::future<void>, std::future<void>> Tplayer::async_start_video_loops
                     std::chrono::duration<long double>(start_of_consuming - play_start_time)
                         .count();
 
-                std::this_thread::sleep_for(std::chrono::duration<long double>(sleep_time));
+                if (sleep_time < 0) {
+                    continue;
+                }
+                else {
+                    std::this_thread::sleep_for(std::chrono::duration<long double>(sleep_time));
+                }
 
                 write(STDOUT_FILENO, image.esqmap.data(), image.esqmap.size());
             }
