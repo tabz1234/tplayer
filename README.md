@@ -1,7 +1,7 @@
 tplayer - Linux terminal video player
 =====================================
 
-![example](https://github.com/tabz1234/tplayer/blob/master/resource/example.jpg)
+![example](https://github.com/tabz1234/tplayer/blob/master/blob/example.jpg)
 
 Terminal support
 ----------------
