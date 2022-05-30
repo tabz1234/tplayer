@@ -2,15 +2,15 @@
 
 #include "terminal/Terminal.hpp"
 
+#include <array>
+#include <concepts>
 #include <vector>
 
 template <std::integral IntT, std::integral auto buff_size_>
-std::string_view static integer_to_chars(const IntT int_val,
-                                         std::array<char, buff_size_>& buff_view)
+std::string_view static integer_to_chars(const IntT int_val, std::array<char, buff_size_>& buff_view)
 {
 
-    const auto [ptr, ec] =
-        std::to_chars(buff_view.data(), buff_view.data() + buff_view.size(), int_val);
+    const auto [ptr, ec] = std::to_chars(buff_view.data(), buff_view.data() + buff_view.size(), int_val);
 
     return {buff_view.data(), ptr};
 }
