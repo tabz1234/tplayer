@@ -24,7 +24,7 @@ AlwaysBreakTemplateDeclarations: 'Yes'
 BinPackArguments: 'false'
 BinPackParameters: 'false'
 BreakBeforeBraces: Stroustrup
-ColumnLimit: '100'
+ColumnLimit: '140'
 CompactNamespaces: 'false'
 ConstructorInitializerAllOnOneLineOrOnePerLine: 'false'
 Cpp11BracedListStyle: 'true'
