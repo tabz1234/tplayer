@@ -4,52 +4,23 @@ extern "C" {
 #include <libavutil/frame.h>
 }
 
-#include <stdexcept>
-#include <utility>
-
-#include "../check.hpp"
-#include "MediaType.hpp"
-
 namespace FFmpeg {
-
-    template <MediaType V>
     struct Frame final {
 
-        Frame() : av_frame_{av_frame_alloc()}
-        {
-            check(av_frame_ != nullptr, " av_frame_alloc failed");
-        }
+        AVFrame* handle;
 
-        const AVFrame* ptr() const noexcept
-        {
-            return av_frame_;
-        }
-        AVFrame* ptr() noexcept
-        {
-            return av_frame_;
-        }
+        Frame() noexcept;
 
-        ~Frame()
-        {
-            av_frame_free(&av_frame_);
-        }
+        bool valid() const noexcept;
+        void wipe() noexcept;
 
-        Frame(Frame&& rval) noexcept : av_frame_{std::exchange(rval.av_frame_, nullptr)}
-        {
-        }
-        Frame& operator=(Frame&& rval) noexcept
-        {
-            std::swap(av_frame_, rval.av_frame_);
-
-            return *this;
-        }
-
-      private:
-        AVFrame* av_frame_;
+        ~Frame();
 
       public:
-        Frame(const Frame&) = delete;
-        Frame& operator=(const Frame&) = delete;
-    };
+        Frame(const Frame&) noexcept = delete;
+        Frame& operator=(const Frame&) noexcept = delete;
 
+        Frame(Frame&&) noexcept;
+        Frame& operator=(Frame&&) noexcept;
+    };
 } // namespace FFmpeg
