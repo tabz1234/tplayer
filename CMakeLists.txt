@@ -45,33 +45,29 @@ if(ENABLE_PCH)
     <cstdlib>
     <thread>
     <type_traits>
-    <map>
     <optional>
-    <stdexcept>
     <memory>
     <utility>)
 endif()
 
 add_executable(${ProjectName}
-	./src/main.cpp
-	./src/Tplayer.cpp
-	./src/frame_to_esqmap.cpp
+	./src/tplayer/main.cpp
+	./src/tplayer/Settings.cpp
+	./src/tplayer/parse_cmd_arguments.cpp
 
-	./src/terminal/Terminal.cpp
-
-	./src/ffmpeg/convert_audio_buffer.cpp
-	./src/ffmpeg/shrink_audio_size_to_content.cpp
-
-	./src/openal/Buffer.cpp
-	./src/openal/StreamingSource.cpp
-	./src/openal/Device.cpp
+	./src/ffmpeg/Format.cpp
+	./src/ffmpeg/FormatHandle.cpp
+	./src/ffmpeg/Packet.cpp
+	./src/ffmpeg/read_packet.cpp
+	./src/ffmpeg/Codec.cpp
+	./src/ffmpeg/Frame.cpp
+	./src/ffmpeg/decode_video_packet.cpp
 
 	)
 
-add_subdirectory(./lib/tbb)
 add_subdirectory(./lib/ffmpeg)
 add_subdirectory(./lib/openal)
 
 target_link_libraries(${ProjectName} -lpthread)
 target_link_libraries(${ProjectName} project_options project_warnings)
-target_link_libraries(${ProjectName} tbb ffmpeg openal)
+target_link_libraries(${ProjectName} ffmpeg openal)
