@@ -16,7 +16,6 @@ Build dependencies
 - findpkg
 - OpenAL
 - FFmpeg
-- Intel Threading Building Blocks(tbb)
 
 Build instructions
 ------------------
