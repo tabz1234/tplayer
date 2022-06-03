@@ -62,6 +62,7 @@ add_executable(${ProjectName}
 	./src/ffmpeg/Codec.cpp
 	./src/ffmpeg/Frame.cpp
 	./src/ffmpeg/decode_video_packet.cpp
+	./src/ffmpeg/HWAccelCodec.cpp
 
 	)
 
