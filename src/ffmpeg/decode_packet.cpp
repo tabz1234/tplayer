@@ -1,7 +1,7 @@
-#include "decode_video_packet.hpp"
+#include "decode_packet.hpp"
 
 namespace FFmpeg {
-    int decode_video_packet(const Codec& codec, const Packet& in, Frame& out) noexcept
+    int decode_packet(const Codec& codec, const Packet& in, Frame& out) noexcept
     {
         int ret;
 
@@ -10,14 +10,14 @@ namespace FFmpeg {
             while (ret != AVERROR_EOF) {
                 ret = avcodec_receive_frame(codec.handle, out.handle);
             }
-            decode_video_packet(codec, in, out);
+            decode_packet(codec, in, out);
         }
 
         ret = avcodec_receive_frame(codec.handle, out.handle);
 
         return ret;
     }
-    int decode_video_packet(const HWAccelCodec& codec, const Packet& in, Frame& temp, Frame& out) noexcept
+    int decode_packet(const HWAccelCodec& codec, const Packet& in, Frame& temp, Frame& out) noexcept
     {
         int ret;
 
@@ -26,7 +26,7 @@ namespace FFmpeg {
             while (ret != AVERROR_EOF) {
                 ret = avcodec_receive_frame(codec.handle, temp.handle);
             }
-            decode_video_packet(codec, in, temp, temp);
+            decode_packet(codec, in, temp, temp);
         }
 
         ret = avcodec_receive_frame(codec.handle, out.handle);

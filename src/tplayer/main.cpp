@@ -6,13 +6,15 @@
 #include "../ffmpeg/Frame.hpp"
 #include "../ffmpeg/HWAccelCodec.hpp"
 #include "../ffmpeg/Packet.hpp"
-#include "../ffmpeg/decode_video_packet.hpp"
+#include "../ffmpeg/decode_multi_packet.hpp"
+#include "../ffmpeg/decode_packet.hpp"
 #include "../ffmpeg/read_packet.hpp"
 
 #include <algorithm>
 #include <array>
 #include <optional>
 #include <thread>
+#include <vector>
 
 using namespace tplayer;
 
@@ -90,19 +92,23 @@ int main(const int argc, const char** const argv)
                 }
 
                 if (use_hw_video_routines && packet.handle->stream_index == video_stream_index.value()) {
-                    const auto decode_ret = FFmpeg::decode_video_packet(hw_video_codec.value(), packet, hw_temp_farme, video_frame);
+                    const auto decode_ret = FFmpeg::decode_packet(hw_video_codec.value(), packet, hw_temp_farme, video_frame);
 
                     video_frame.wipe();
                     hw_temp_farme.wipe();
                 }
-
-                if (use_video_routines && packet.handle->stream_index == video_stream_index.value()) {
-                    const auto decode_ret = FFmpeg::decode_video_packet(video_codec.value(), packet, video_frame);
+                else if (use_video_routines && packet.handle->stream_index == video_stream_index.value()) {
+                    const auto decode_ret = FFmpeg::decode_packet(video_codec.value(), packet, video_frame);
 
                     video_frame.wipe();
                 }
+                else if (use_audio_routines && packet.handle->stream_index == audio_stream_index.value()) {
+                    const auto decode_ret =
+                        FFmpeg::decode_multi_frame(audio_codec.value(), packet, std::back_insert_iterator{audio_frames_vec});
 
-                if (use_audio_routines && packet.handle->stream_index == audio_stream_index.value()) {
+                    for (auto& audio_frame : audio_frames_vec) {
+                    }
+
                     audio_frames_vec.clear();
                 }
 
