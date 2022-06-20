@@ -1,5 +1,6 @@
 #include "Packet.hpp"
 
+#include <cstdio>
 #include <utility>
 
 namespace FFmpeg {
@@ -7,6 +8,7 @@ namespace FFmpeg {
     {
         if (handle == nullptr) [[unlikely]] {
             valid_ = false;
+            fprintf(stderr, "av_packet_alloc failed\n");
         }
     }
 

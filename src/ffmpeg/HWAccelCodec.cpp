@@ -12,6 +12,7 @@ namespace FFmpeg {
         const AVCodec* avcodec = avcodec_find_decoder(codec_params->codec_id);
         if (avcodec == nullptr) [[unlikely]] {
             valid_ = false;
+            fprintf(stderr, "avcodec_find_decoder failed, codec name :%s\n", avcodec_get_name(codec_params->codec_id));
             return;
         }
 
@@ -20,6 +21,7 @@ namespace FFmpeg {
 
             if (config == nullptr) [[unlikely]] {
                 valid_ = false;
+                fprintf(stderr, "HWAccelCodec creation failed, codec doesnt support requested hardware accelleration device\n");
                 return;
             }
 
@@ -32,12 +34,14 @@ namespace FFmpeg {
         handle = avcodec_alloc_context3(avcodec);
         if (handle == nullptr) [[unlikely]] {
             valid_ = false;
+            fprintf(stderr, "avcodec_alloc_context3 failed\n");
             return;
         }
 
         auto c_api_ret = avcodec_parameters_to_context(handle, codec_params);
         if (c_api_ret != 0) [[unlikely]] {
             valid_ = false;
+            fprintf(stderr, "avcodec_parameters_to_context failed\n");
             return;
         }
 
@@ -46,6 +50,7 @@ namespace FFmpeg {
         c_api_ret = av_hwdevice_ctx_create(&av_buffer_ref_, dev_type, nullptr, nullptr, 0);
         if (c_api_ret != 0) {
             valid_ = false;
+            fprintf(stderr, "av_hwdevice_ctx_create failed\n");
             return;
         }
 
@@ -54,6 +59,7 @@ namespace FFmpeg {
         c_api_ret = avcodec_open2(handle, avcodec, nullptr);
         if (c_api_ret != 0) [[unlikely]] {
             valid_ = false;
+            fprintf(stderr, "avcodec_open2 failed, codec name :%s\n", avcodec_get_name(codec_params->codec_id));
             return;
         }
     }
@@ -81,7 +87,7 @@ namespace FFmpeg {
     }
 } // namespace FFmpeg
 
-static enum AVPixelFormat get_hw_format(AVCodecContext* ctx, const enum AVPixelFormat* pix_fmts)
+static enum AVPixelFormat get_hw_format(AVCodecContext* unused, const enum AVPixelFormat* pix_fmts)
 {
     const enum AVPixelFormat* p;
 

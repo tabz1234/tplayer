@@ -54,6 +54,8 @@ add_executable(${ProjectName}
 	./src/tplayer/main.cpp
 	./src/tplayer/Settings.cpp
 	./src/tplayer/parse_cmd_arguments.cpp
+	./src/tplayer/init_cache_space.cpp
+	./src/tplayer/compute_scaling_factor.cpp
 
 	./src/ffmpeg/Format.cpp
 	./src/ffmpeg/FormatHandle.cpp
@@ -64,6 +66,11 @@ add_executable(${ProjectName}
 	./src/ffmpeg/decode_packet.cpp
 	./src/ffmpeg/HWAccelCodec.cpp
 	./src/ffmpeg/decode_multi_packet.cpp
+	./src/ffmpeg/shrink_audio_size_to_content.cpp
+	./src/ffmpeg/scale_video_frame.cpp
+	./src/ffmpeg/SWScaler.cpp
+
+	./src/terminal/get_window_size.cpp
 
 	)
 

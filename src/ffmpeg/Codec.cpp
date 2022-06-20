@@ -9,21 +9,29 @@ namespace FFmpeg {
         const AVCodec* avcodec = avcodec_find_decoder(codec_params->codec_id);
         if (avcodec == nullptr) [[unlikely]] {
             valid_ = false;
+            fprintf(stderr, "avcodec_find_decoder failed, codec name :%s\n", avcodec_get_name(codec_params->codec_id));
+            return;
         }
 
         handle = avcodec_alloc_context3(avcodec);
         if (handle == nullptr) [[unlikely]] {
             valid_ = false;
+            fprintf(stderr, "avcodec_alloc_context3 failed\n");
+            return;
         }
 
         auto c_api_ret = avcodec_parameters_to_context(handle, codec_params);
         if (c_api_ret != 0) [[unlikely]] {
             valid_ = false;
+            fprintf(stderr, "avcodec_parameters_to_context failed\n");
+            return;
         }
 
         c_api_ret = avcodec_open2(handle, avcodec, nullptr);
         if (c_api_ret != 0) [[unlikely]] {
             valid_ = false;
+            fprintf(stderr, "avcodec_open2 failed, codec name :%s\n", avcodec_get_name(codec_params->codec_id));
+            return;
         }
     }
 

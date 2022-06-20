@@ -17,7 +17,10 @@ namespace FFmpeg {
 
         return ret;
     }
-    int decode_packet(const HWAccelCodec& codec, const Packet& in, Frame& temp, Frame& out) noexcept
+    int decode_packet(const HWAccelCodec& codec,
+                      const Packet& in,
+                      Frame& temp,
+                      Frame& out) noexcept // very slow due to memory transfer overhead
     {
         int ret;
 
@@ -26,11 +29,13 @@ namespace FFmpeg {
             while (ret != AVERROR_EOF) {
                 ret = avcodec_receive_frame(codec.handle, temp.handle);
             }
-            decode_packet(codec, in, temp, temp);
+            decode_packet(codec, in, temp, out);
         }
 
-        ret = avcodec_receive_frame(codec.handle, out.handle);
-        if (ret != 0) return ret;
+        ret = avcodec_receive_frame(codec.handle, temp.handle);
+        if (ret != 0) [[unlikely]] {
+            return ret;
+        }
 
         ret = av_hwframe_transfer_data(out.handle, temp.handle, 0);
 

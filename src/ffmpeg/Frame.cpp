@@ -5,6 +5,9 @@
 namespace FFmpeg {
     Frame::Frame() noexcept : handle{av_frame_alloc()}
     {
+        if (handle == nullptr) [[unlikely]] {
+            fprintf(stderr, "av_frame_alloc failed\n");
+        }
     }
 
     bool Frame::valid() const noexcept

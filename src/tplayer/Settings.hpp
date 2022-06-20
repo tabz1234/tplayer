@@ -9,9 +9,13 @@
 namespace tplayer {
     struct Settings final {
 
-        DrawMethod draw_method;
-        HWAccelDevice hw_dev;
+        DrawMethod draw_method = DrawMethod::straight;
+
+        HWAccelDevice hw_dev = HWAccelDevice::NONE;
+
         std::vector<std::string_view> files_to_process;
+
+        bool interlaced_presentation = true;
 
         Settings() noexcept;
     };

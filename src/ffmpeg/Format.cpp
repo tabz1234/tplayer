@@ -11,6 +11,8 @@ namespace FFmpeg {
         const auto c_api_ret = avformat_open_input(&format_.handle, fname.data(), nullptr, nullptr);
         if (c_api_ret != 0) [[unlikely]] {
             valid_ = false;
+            fprintf(stderr, "avformat_open_input failed\n");
+            return;
         }
     }
 

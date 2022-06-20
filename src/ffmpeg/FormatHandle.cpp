@@ -5,6 +5,10 @@
 namespace FFmpeg {
     FormatHandle::FormatHandle() noexcept : handle{avformat_alloc_context()}
     {
+        if (handle == nullptr) [[unlikely]] {
+            fprintf(stderr, "avformat_alloc_context failed\n");
+            return;
+        }
     }
 
     bool FormatHandle::valid() const noexcept

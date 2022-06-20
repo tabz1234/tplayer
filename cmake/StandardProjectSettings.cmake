@@ -27,6 +27,12 @@ if(BAN_EXCEPTIONS)
   add_compile_options(-fno-exceptions)
 endif()
 
+option(ENABLE_PROFILING "-pg" OFF)
+if(BAN_EXCEPTIONS)
+  add_compile_options(-pg)
+  add_link_options(-pg)
+endif()
+
 option(ENABLE_IPO "Enable Interprocedural Optimization, aka Link Time Optimization (LTO)" ON)
 if(ENABLE_IPO)
   include(CheckIPOSupported)
