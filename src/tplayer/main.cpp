@@ -8,11 +8,14 @@
 #include "../ffmpeg/Frame.hpp"
 #include "../ffmpeg/HWAccelCodec.hpp"
 #include "../ffmpeg/Packet.hpp"
+#include "../ffmpeg/SWResampler.hpp"
 #include "../ffmpeg/SWScaler.hpp"
 #include "../ffmpeg/decode_multi_packet.hpp"
 #include "../ffmpeg/decode_packet.hpp"
 #include "../ffmpeg/read_packet.hpp"
+#include "../ffmpeg/resample_audio_frame.hpp"
 #include "../ffmpeg/scale_video_frame.hpp"
+#include "../ffmpeg/shrink_audio_size_to_content.hpp"
 
 #include "../util/fcheck.hpp"
 
@@ -57,9 +60,6 @@ int main(const int argc, const char** const argv)
             std::optional<FFmpeg::Codec> video_codec;
             std::optional<FFmpeg::HWAccelCodec> hw_video_codec;
 
-            std::optional<int> audio_stream_index;
-            std::optional<FFmpeg::Codec> audio_codec;
-
             auto construct_software_video_codec = [&] {
                 video_codec.emplace(format.get()->streams[video_stream_index.value()]->codecpar);
                 if (!video_codec.value().valid()) [[unlikely]] {
@@ -86,10 +86,21 @@ int main(const int argc, const char** const argv)
                 }
             }
 
+            std::optional<int> audio_stream_index;
+            std::optional<FFmpeg::Codec> audio_codec;
+            SwrContext* audio_resampler;
+
             const auto a_stream = av_find_best_stream(format.get(), AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
             if (a_stream >= 0) {
                 audio_stream_index = a_stream;
-                audio_codec.emplace(format.get()->streams[audio_stream_index.value()]->codecpar);
+                const auto codecpar = format.get()->streams[audio_stream_index.value()]->codecpar;
+                audio_codec.emplace(codecpar);
+                audio_resampler = FFmpeg::create_swr_resampler(codecpar->channel_layout,
+                                                               static_cast<enum AVSampleFormat>(codecpar->format),
+                                                               codecpar->sample_rate,
+                                                               codecpar->channel_layout,
+                                                               AV_SAMPLE_FMT_FLT,
+                                                               codecpar->sample_rate);
             }
 
             const bool use_hw_video_routines = hw_video_codec.has_value() && hw_video_codec->valid();
@@ -115,7 +126,8 @@ int main(const int argc, const char** const argv)
             FFmpeg::Frame final_video_frame;
 
             constexpr auto AUDIO_FRAMES_VEC_RESERVE = 100;
-            std::vector<FFmpeg::Frame> audio_frames_vec(AUDIO_FRAMES_VEC_RESERVE);
+            std::vector<FFmpeg::Frame> raw_audio_frames_vec(AUDIO_FRAMES_VEC_RESERVE);
+            FFmpeg::Frame final_audio_frame;
 
             init_cache_space();
 
@@ -170,9 +182,13 @@ int main(const int argc, const char** const argv)
                     final_video_frame.wipe();
                 }
                 else if (use_audio_routines && packet.handle->stream_index == audio_stream_index.value()) {
-                    const auto decode_ret = FFmpeg::decode_multi_packet(audio_codec.value(), packet, audio_frames_vec);
+                    const auto decode_ret = FFmpeg::decode_multi_packet(audio_codec.value(), packet, raw_audio_frames_vec);
 
-                    for (auto& audio_frame : audio_frames_vec) {
+                    for (const auto& audio_frame : raw_audio_frames_vec) {
+                        FFmpeg::resample_audio_frame(audio_resampler, audio_frame, final_video_frame);
+                        FFmpeg::shrink_audio_size_to_content(final_audio_frame);
+
+                        final_audio_frame.wipe();
                     }
                 }
 

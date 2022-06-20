@@ -69,6 +69,8 @@ add_executable(${ProjectName}
 	./src/ffmpeg/shrink_audio_size_to_content.cpp
 	./src/ffmpeg/scale_video_frame.cpp
 	./src/ffmpeg/SWScaler.cpp
+	./src/ffmpeg/resample_audio_frame.cpp
+	./src/ffmpeg/SWResampler.cpp
 
 	./src/terminal/get_window_size.cpp
 
