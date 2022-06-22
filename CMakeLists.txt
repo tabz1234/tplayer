@@ -77,6 +77,8 @@ add_executable(${ProjectName}
 	./src/ffmpeg/resample_audio_frame.cpp
 	./src/ffmpeg/SWResampler.cpp
 
+	./src/openal/Device.cpp
+
 	./src/terminal/get_window_size.cpp
 
 	)

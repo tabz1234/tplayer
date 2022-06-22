@@ -22,6 +22,9 @@
 #include "../ffmpeg/scale_video_frame.hpp"
 #include "../ffmpeg/shrink_audio_size_to_content.hpp"
 
+#include "../openal/Device.hpp"
+
+#include "../util/DebugVariable.hpp"
 #include "../util/fcheck.hpp"
 
 #include "../terminal/get_window_size.hpp"
@@ -42,18 +45,20 @@ int main(const int argc, const char** const argv)
     Settings app_settings;
     parse_cmd_arguments(argc, argv, app_settings);
 
-    std::atomic<bool> producer_need_to_exit = false;
-
-    std::mutex video_props_mutex;
-    std::deque<unsigned long> video_ids;
-    std::deque<long double> video_durations;
-    std::deque<long> video_sizes;
-
-    std::mutex audio_props_mutex;
-    std::deque<long> audio_ids;
-    std::deque<long> audio_sizes;
+    OpenAL::Device openal_dev;
 
     for (const auto file : app_settings.files_to_process) {
+
+        std::atomic<bool> producer_need_to_exit = false;
+
+        std::mutex video_props_mutex;
+        std::deque<unsigned long> video_ids;
+        std::deque<long double> video_durations;
+        std::deque<long> video_sizes;
+
+        std::mutex audio_props_mutex;
+        std::deque<long> audio_ids;
+        std::deque<long> audio_sizes;
 
         std::thread producer_thread([&] {
             FFmpeg::Format format(file);
@@ -71,7 +76,7 @@ int main(const int argc, const char** const argv)
             std::optional<FFmpeg::Codec> video_codec;
             std::optional<FFmpeg::HWAccelCodec> hw_video_codec;
 
-            auto construct_software_video_codec = [&] {
+            const auto construct_software_video_codec = [&] {
                 video_codec.emplace(format.get()->streams[video_stream_index.value()]->codecpar);
                 if (!video_codec.value().valid()) [[unlikely]] {
                     fprintf(stderr, "Software video decoder init failed \n");
@@ -99,7 +104,7 @@ int main(const int argc, const char** const argv)
 
             std::optional<int> audio_stream_index;
             std::optional<FFmpeg::Codec> audio_codec;
-            SwrContext* audio_resampler;
+            SwrContext* audio_resampler = nullptr;
 
             const auto a_stream = av_find_best_stream(format.get(), AVMEDIA_TYPE_AUDIO, -1, -1, nullptr, 0);
             if (a_stream >= 0) {
@@ -116,7 +121,7 @@ int main(const int argc, const char** const argv)
 
             const bool use_hw_video_routines = hw_video_codec.has_value() && hw_video_codec->valid();
             const bool use_video_routines = video_codec.has_value() && video_codec->valid();
-            const bool use_audio_routines = audio_codec.has_value() && audio_codec->valid();
+            const bool use_audio_routines = audio_codec.has_value() && audio_codec->valid() && openal_dev.valid();
 
             FFmpeg::Packet packet;
 
@@ -145,11 +150,15 @@ int main(const int argc, const char** const argv)
 
             unsigned long cur_audio_frame_id = 0;
 
-            init_cache_space();
+            const auto cache_space_created = init_cache_space();
+            fcheck(cache_space_created == 0, [] {
+                fprintf(stderr, "init_cache_space failed, TODO fallback to in-memory buffering");
+                exit(EXIT_FAILURE);
+            });
 
             while (!producer_need_to_exit) {
                 const auto read_ret = FFmpeg::read_packet(format, packet);
-                if (read_ret != 0) {
+                if (read_ret != 0) [[unlikely]] {
                     producer_need_to_exit = true;
                     return;
                 }
@@ -249,14 +258,19 @@ int main(const int argc, const char** const argv)
             FFmpeg::destroy_sws_scaler(video_scaler);
         });
 
-#if 0
+#if 1
         while (1) {
             printf("LOOOP\n");
-            std::this_thread::sleep_for(std::chrono::seconds(1));
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            std::this_thread::yield();
         }
 
 #endif
         producer_thread.join();
+    }
+
+    if constexpr (!DEBUG) {
+        // recursive cache cleanup
     }
 
     return 0;
