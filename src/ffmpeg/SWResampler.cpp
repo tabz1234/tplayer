@@ -21,7 +21,7 @@ namespace FFmpeg {
 
         return ret;
     }
-    void free_swr_resampler(SwrContext* handle) noexcept
+    void destroy_swr_resampler(SwrContext* handle) noexcept
     {
         swr_close(handle);
         swr_free(&handle);

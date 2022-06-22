@@ -10,7 +10,6 @@ namespace FFmpeg {
             Frame bloat_frame;
             while (ret != AVERROR_EOF) {
                 ret = avcodec_receive_frame(codec.handle, bloat_frame.handle);
-                bloat_frame.wipe();
             }
             decode_multi_packet(codec, in, out);
         }

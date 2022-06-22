@@ -10,8 +10,7 @@ if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
     PROPERTY STRINGS
              "Debug"
              "Release"
-             "MinSizeRel"
-             "RelWithDebInfo")
+             "MinSizeRel")
 endif()
 
 # Generate compile_commands.json to make it easier to work with clang based tools
@@ -28,7 +27,7 @@ if(BAN_EXCEPTIONS)
 endif()
 
 option(ENABLE_PROFILING "-pg" OFF)
-if(BAN_EXCEPTIONS)
+if(ENABLE_PROFILING)
   add_compile_options(-pg)
   add_link_options(-pg)
 endif()

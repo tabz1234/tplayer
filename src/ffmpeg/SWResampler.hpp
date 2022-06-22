@@ -12,5 +12,5 @@ namespace FFmpeg {
                                      const enum AVSampleFormat out_sample_fmt,
                                      const int out_sample_rate) noexcept;
 
-    void free_swr_resampler(SwrContext* handle) noexcept;
+    void destroy_swr_resampler(SwrContext* handle) noexcept;
 } // namespace FFmpeg

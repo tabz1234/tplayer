@@ -56,6 +56,11 @@ add_executable(${ProjectName}
 	./src/tplayer/parse_cmd_arguments.cpp
 	./src/tplayer/init_cache_space.cpp
 	./src/tplayer/compute_scaling_factor.cpp
+	./src/tplayer/end_write_frame.cpp
+	./src/tplayer/prepare_to_write_video_frame.cpp
+	./src/tplayer/write_video_frame.cpp
+	./src/tplayer/write_audio_frame.cpp
+	./src/tplayer/prepare_to_write_audio_frame.cpp
 
 	./src/ffmpeg/Format.cpp
 	./src/ffmpeg/FormatHandle.cpp

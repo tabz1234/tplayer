@@ -1,7 +1,12 @@
 #include "Settings.hpp"
 #include "compute_scaling_factor.hpp"
+#include "end_write_frame.hpp"
 #include "init_cache_space.hpp"
 #include "parse_cmd_arguments.hpp"
+#include "prepare_to_write_audio_frame.hpp"
+#include "prepare_to_write_video_frame.hpp"
+#include "write_audio_frame.hpp"
+#include "write_video_frame.hpp"
 
 #include "../ffmpeg/Codec.hpp"
 #include "../ffmpeg/Format.hpp"
@@ -23,10 +28,10 @@
 
 #include <algorithm>
 #include <array>
-#include <atomic>
 #include <cstdio>
+#include <deque>
+#include <mutex>
 #include <optional>
-#include <queue>
 #include <thread>
 #include <vector>
 
@@ -39,6 +44,15 @@ int main(const int argc, const char** const argv)
 
     std::atomic<bool> producer_need_to_exit = false;
 
+    std::mutex video_props_mutex;
+    std::deque<unsigned long> video_ids;
+    std::deque<long double> video_durations;
+    std::deque<long> video_sizes;
+
+    std::mutex audio_props_mutex;
+    std::deque<long> audio_ids;
+    std::deque<long> audio_sizes;
+
     for (const auto file : app_settings.files_to_process) {
 
         std::thread producer_thread([&] {
@@ -49,9 +63,6 @@ int main(const int argc, const char** const argv)
                 producer_need_to_exit = true;
                 return;
             }
-
-            // freopen("stderr.dump", "w+", stderr);
-            // freopen("stdout.dump", "w+", stdout);
 
             avformat_find_stream_info(format.get(), nullptr);
             av_dump_format(format.get(), 0, file.data(), 0);
@@ -125,9 +136,14 @@ int main(const int argc, const char** const argv)
             SwsContext* video_scaler = nullptr;
             FFmpeg::Frame final_video_frame;
 
-            constexpr auto AUDIO_FRAMES_VEC_RESERVE = 100;
+            unsigned long cur_video_frame_id = 0;
+
+            constexpr auto AUDIO_FRAMES_VEC_RESERVE = 30;
             std::vector<FFmpeg::Frame> raw_audio_frames_vec(AUDIO_FRAMES_VEC_RESERVE);
+
             FFmpeg::Frame final_audio_frame;
+
+            unsigned long cur_audio_frame_id = 0;
 
             init_cache_space();
 
@@ -139,11 +155,13 @@ int main(const int argc, const char** const argv)
                 }
 
                 if (use_hw_video_routines && packet.handle->stream_index == video_stream_index.value()) {
+
                     const auto decode_ret = FFmpeg::decode_packet(hw_video_codec.value(), packet, raw_hw_temp_farme, raw_video_frame);
 
                     raw_video_frame.wipe();
                 }
                 else if (use_video_routines && packet.handle->stream_index == video_stream_index.value()) {
+
                     const auto decode_ret = FFmpeg::decode_packet(video_codec.value(), packet, raw_video_frame);
 
                     const auto current_window_extent = terminal::get_window_size();
@@ -179,15 +197,47 @@ int main(const int argc, const char** const argv)
                     prev_window_width = current_window_extent.ws_xpixel;
                     prev_window_height = current_window_extent.ws_ypixel;
 
+                    prepare_to_write_video_frame(cur_video_frame_id);
+                    write_video_frame(final_video_frame);
+                    end_write_frame();
+
+                    video_props_mutex.lock();
+
+                    video_ids.emplace_back(cur_video_frame_id);
+                    video_durations.emplace_back(final_video_frame.handle->pkt_duration);
+                    video_sizes.emplace_back(final_video_frame.handle->linesize[0] * final_video_frame.handle->height);
+
+                    video_props_mutex.unlock();
+
+                    cur_video_frame_id++;
                     final_video_frame.wipe();
                 }
                 else if (use_audio_routines && packet.handle->stream_index == audio_stream_index.value()) {
+
                     const auto decode_ret = FFmpeg::decode_multi_packet(audio_codec.value(), packet, raw_audio_frames_vec);
 
-                    for (const auto& audio_frame : raw_audio_frames_vec) {
-                        FFmpeg::resample_audio_frame(audio_resampler, audio_frame, final_video_frame);
+                    for (int i = 0; i < raw_audio_frames_vec.size(); ++i) {
+
+                        if (raw_audio_frames_vec.at(i).handle->data[0] == nullptr) {
+                            break;
+                        }
+
+                        final_audio_frame.handle->format = AV_SAMPLE_FMT_FLT;
+                        FFmpeg::resample_audio_frame(audio_resampler, raw_audio_frames_vec.at(i), final_audio_frame);
                         FFmpeg::shrink_audio_size_to_content(final_audio_frame);
 
+                        prepare_to_write_audio_frame(cur_audio_frame_id);
+                        write_audio_frame(final_audio_frame);
+                        end_write_frame();
+
+                        audio_props_mutex.lock();
+
+                        audio_ids.emplace_back(cur_audio_frame_id);
+                        audio_sizes.emplace_back(final_audio_frame.handle->linesize[0]);
+
+                        audio_props_mutex.unlock();
+
+                        cur_audio_frame_id++;
                         final_audio_frame.wipe();
                     }
                 }
@@ -195,6 +245,7 @@ int main(const int argc, const char** const argv)
                 packet.wipe();
             }
 
+            FFmpeg::destroy_swr_resampler(audio_resampler);
             FFmpeg::destroy_sws_scaler(video_scaler);
         });
 
