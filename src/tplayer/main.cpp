@@ -160,7 +160,7 @@ int main(const int argc, const char** const argv)
                 const auto read_ret = FFmpeg::read_packet(format, packet);
                 if (read_ret != 0) [[unlikely]] {
                     producer_need_to_exit = true;
-                    return;
+                    break;
                 }
 
                 if (use_hw_video_routines && packet.handle->stream_index == video_stream_index.value()) {
@@ -258,7 +258,7 @@ int main(const int argc, const char** const argv)
             FFmpeg::destroy_sws_scaler(video_scaler);
         });
 
-#if 1
+#if 0
         while (1) {
             printf("LOOOP\n");
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
