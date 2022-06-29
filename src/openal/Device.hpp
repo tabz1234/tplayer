@@ -17,6 +17,12 @@ namespace OpenAL {
         ALCcontext* alc_ctx_;
 
         bool valid_ = false;
+
+        Device(const Device&) noexcept = delete;
+        Device& operator=(const Device&) noexcept = delete;
+
+        Device(Device&&) noexcept = delete;
+        Device& operator=(Device&&) noexcept = delete;
     };
 
 } // namespace OpenAL

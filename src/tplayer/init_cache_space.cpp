@@ -5,9 +5,9 @@
 #include "../util/fcheck.hpp"
 
 namespace tplayer {
-    bool init_cache_space() noexcept
+    int init_cache_space() noexcept
     {
-        bool ret = 0;
+        int ret = 0;
         std::error_code errc;
 
         const auto tmp_dir = std::filesystem::temp_directory_path(errc);
